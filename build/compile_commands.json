@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/victor/Documents/chess_computer_graphics_polimi/build",
+  "command": "/usr/bin/g++  -I/home/victor/Documents/chess_computer_graphics_polimi -g -o CMakeFiles/chess.o.dir/main.cpp.o -c /home/victor/Documents/chess_computer_graphics_polimi/main.cpp",
+  "file": "/home/victor/Documents/chess_computer_graphics_polimi/main.cpp"
+},
+{
+  "directory": "/home/victor/Documents/chess_computer_graphics_polimi/build",
+  "command": "/usr/bin/g++  -I/home/victor/Documents/chess_computer_graphics_polimi -g -o CMakeFiles/chess.o.dir/pieces.cpp.o -c /home/victor/Documents/chess_computer_graphics_polimi/pieces.cpp",
+  "file": "/home/victor/Documents/chess_computer_graphics_polimi/pieces.cpp"
+}
+]
