@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -29,6 +30,7 @@ public:
     Piece(PieceType type, Color color, int x, int y);
     virtual ~Piece() = default;
 
+    PieceType getType() const;
     Color getColor() const;
     std::pair<int, int> getPosition() const;
     void setPosition(int newX, int newY);

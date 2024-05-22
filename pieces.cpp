@@ -9,6 +9,11 @@ Color Piece::getColor() const
     return color;
 }
 
+PieceType Piece::getType() const
+{
+    return type;
+}
+
 std::pair<int, int> Piece::getPosition() const
 {
     return {x, y};

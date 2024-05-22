@@ -12,7 +12,7 @@ project(CHESS)
 
 # Add the executable
 
-add_executable(chess.o main.cpp pieces.cpp)
+add_executable(chess.o main.cpp pieces.cpp player.cpp board.cpp game.cpp)
 
 
 
