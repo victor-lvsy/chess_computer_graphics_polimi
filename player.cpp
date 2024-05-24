@@ -1,4 +1,4 @@
-#include "player.h"
+#include "header/player.h"
 
 // Constructor
 Player::Player(const std::string &name) : name(name) {}

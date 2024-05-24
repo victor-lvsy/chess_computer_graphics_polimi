@@ -1,4 +1,4 @@
-#include "pieces.h"
+#include "header/pieces.h"
 
 // Piece constructor
 Piece::Piece(PieceType type, Color color, int x, int y)

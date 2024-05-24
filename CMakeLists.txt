@@ -18,4 +18,4 @@ add_executable(chess.o main.cpp pieces.cpp player.cpp board.cpp game.cpp)
 
 # Include this directory for header files
 
-target_include_directories(chess.o PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(chess.o PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR/header})

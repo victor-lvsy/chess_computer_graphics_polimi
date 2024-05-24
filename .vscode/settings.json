@@ -68,6 +68,9 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "stop_token": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "deque": "cpp",
+        "iomanip": "cpp",
+        "__nullptr": "cpp"
     }
 }

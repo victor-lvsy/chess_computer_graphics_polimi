@@ -1,4 +1,4 @@
-#include "game.h"
+#include "header/game.h"
 
 // Constructor
 Game::Game(const std::string &player1Name, const std::string &player2Name)
