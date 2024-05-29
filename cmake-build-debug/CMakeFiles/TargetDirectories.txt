@@ -1,0 +1,3 @@
+/Users/lindagiulivo/CLionProjects/chess_computer_graphics_polimi/cmake-build-debug/CMakeFiles/chess.o.dir
+/Users/lindagiulivo/CLionProjects/chess_computer_graphics_polimi/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/lindagiulivo/CLionProjects/chess_computer_graphics_polimi/cmake-build-debug/CMakeFiles/rebuild_cache.dir
