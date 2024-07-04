@@ -1,4 +1,4 @@
-#include "header/game.h"
+#include "headers/game.h"
 
 #include <memory> // For using smart pointers
 
