@@ -1,8 +1,10 @@
 #include "header/pieces.h"
 
+std::atomic<int> Piece::idCounter{0};
+
 // Piece constructor
 Piece::Piece(PieceType type, Color color, int x, int y)
-    : type(type), color(color), x(x), y(y) {}
+    :id(++idCounter), type(type), color(color), x(x), y(y), alive(true) {}
 
 Color Piece::getColor() const
 {
@@ -12,6 +14,21 @@ Color Piece::getColor() const
 PieceType Piece::getType() const
 {
     return type;
+}
+
+int Piece::getID() const
+{
+    return id;
+}
+
+bool Piece::isAlive() const
+{
+    return alive;
+}
+
+void Piece::kill()
+{
+    alive = false;
 }
 
 std::pair<int, int> Piece::getPosition() const
@@ -28,7 +45,9 @@ void Piece::setPosition(int newX, int newY)
 void Piece::print() const
 {
     static const char *pieceTypeNames[] = {"Pawn", "Knight", "Bishop", "Rook", "Queen", "King"};
-    std::cout << "Type: " << pieceTypeNames[static_cast<int>(type)]
+    std::cout << "ID: " << id
+              << ", Status: " << (alive ? "Alive" : "Dead")
+              << ", Type: " << pieceTypeNames[static_cast<int>(type)]
               << ", Color: " << (color == Color::WHITE ? "White" : "Black")
               << ", Position: (" << x << ", " << y << ")\n";
 }
@@ -64,7 +83,13 @@ bool Pawn::isLegalMove(int newX, int newY) const
     {
         return true;
     }
-    // Additional rules like capturing moves (diagonal) can be added here
+    
+    // Check if move is a diagonal capture move
+    if (newX == x + direction && (newY == y + 1 || newY == y - 1))
+    {
+        return true;
+    }
+
     return false;
 }
 

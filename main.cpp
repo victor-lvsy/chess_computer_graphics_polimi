@@ -2,77 +2,40 @@
 
 #include <memory> // For using smart pointers
 
+
 int main()
 {
 
-    // Create a game with two players
-    Game chessGame("Alice", "Bob");
-
-    // Initialize the game (place all pieces)
-    chessGame.init();
-
-    // Display the initial state of the board
-    chessGame.displayBoard();
+    // Create a game
+    Game chessGame;
 
     // Get references to the board and pieces for convenience
     Board &board = chessGame.getBoard();
 
-    // Implement a set of moves
-    // Move White pawn from (1, 0) to (2, 0)
-    // Move White Knight from (0, 1) to (2, 2)
-    Piece *whiteKnight1 = board.getPiece(0, 1);
-    if (board.isLegalMove(whiteKnight1, 2, 2))
+     // Initial positions of the White pieces
+    board.placePiece(std::make_unique<King>(Color::WHITE, 0, 4), 0, 4);
+
+    board.placePiece(std::make_unique<Pawn>(Color::BLACK, 1, 5), 1, 5);
+    board.placePiece(std::make_unique<Pawn>(Color::BLACK, 1, 4), 1, 4);
+    board.placePiece(std::make_unique<Pawn>(Color::BLACK, 1, 3), 1, 3);
+    board.placePiece(std::make_unique<Pawn>(Color::BLACK, 2, 5), 2, 5);
+    board.placePiece(std::make_unique<Pawn>(Color::BLACK, 2, 4), 2, 4);
+    board.placePiece(std::make_unique<Pawn>(Color::BLACK, 2, 3), 2, 3);
+
+    board.displayBoard();
+
+    std::cout << "Checking for checkmate..." << std::endl;
+    // Check for checkmate
+    if (board.isCheckmate(Color::WHITE))
     {
-        board.movePiece(whiteKnight1, 2, 2);
-        std::cout << "Move White Knight from (0, 1) to (2, 2) is legal.\n";
+        std::cout << "White is in checkmate!\n";
     }
     else
     {
-        std::cout << "Move White Knight from (0, 1) to (2, 2) is illegal.\n";
+        std::cout << "White is not in checkmate.\n";
     }
 
-    chessGame.displayBoard();
 
-    // Move Black pawn from (6, 0) to (5, 0)
-    Piece *blackPawn1 = board.getPiece(6, 0);
-
-    if (board.isLegalMove(blackPawn1, 4, 0))
-    {
-        board.movePiece(blackPawn1, 4, 0);
-        std::cout << "Move Black Pawn from (6, 0) to (4, 0) is legal.\n";
-    }
-    else
-    {
-        std::cout << "Move Black Pawn from (6, 0) to (4, 0) is illegal.\n";
-    }
-
-    chessGame.displayBoard();
-
-    if (board.isLegalMove(whiteKnight1, 4, 3))
-    {
-        board.movePiece(whiteKnight1, 4, 3);
-        std::cout << "Move White Knight to (4, 3) is legal.\n";
-    }
-    else
-    {
-        std::cout << "Move White Knight to (4, 3) is illegal.\n";
-    }
-
-    chessGame.displayBoard();
-
-    if (board.isLegalMove(whiteKnight1, 6, 4))
-    {
-        board.movePiece(whiteKnight1, 6, 4);
-        std::cout << "Move White Knight to (6, 4) is legal.\n";
-    }
-    else
-    {
-        std::cout << "Move White Knight to (6, 4) is illegal.\n";
-    }
-
-    chessGame.displayBoard();
-
-    // Additional moves can be added here
 
     return 0;
 }
