@@ -3,7 +3,7 @@ project(CHESS)
 
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
-# find_package(GLM REQUIRED)
+find_package(GLM REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
