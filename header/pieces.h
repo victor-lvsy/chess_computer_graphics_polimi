@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <atomic>
 
 enum class PieceType
 {
@@ -22,9 +23,12 @@ enum class Color
 class Piece
 {
 protected:
+    static std::atomic<int> idCounter; // Static counter for unique IDs
+    int id; // Unique ID for the piece
     PieceType type; // Type of the piece
     Color color;    // Color of the piece
     int x, y;       // Position of the piece on the board (row, col)
+    bool alive;
 
 public:
     Piece(PieceType type, Color color, int x, int y);
@@ -34,6 +38,9 @@ public:
     Color getColor() const;
     std::pair<int, int> getPosition() const;
     void setPosition(int newX, int newY);
+    int getID() const;
+    bool isAlive() const;
+    void kill();
 
     // Pure virtual function to check if the move is legal
     virtual bool isLegalMove(int newX, int newY) const = 0;
