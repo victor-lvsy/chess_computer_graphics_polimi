@@ -8,7 +8,7 @@ find_package(glfw3 REQUIRED)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(chess.o MeshLoader.cpp main.cpp pieces.cpp board.cpp game.cpp)
+add_executable(chess.o MeshLoader.cpp pieces.cpp board.cpp game.cpp)
 
 target_include_directories(chess.o PRIVATE ${Vulkan_INCLUDE_DIRS} ${GLM_INCLUDE_DIRS})
 

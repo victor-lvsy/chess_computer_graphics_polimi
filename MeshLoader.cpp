@@ -1,6 +1,9 @@
 // This has been adapted from the Vulkan tutorial
 
 #include "Starter.hpp"
+#include "header/game.h"
+
+#include <memory> // For using smart pointers
 
 // The uniform buffer objects data structures
 // Remember to use the correct alignas(...) value
@@ -59,6 +62,8 @@ class MeshLoader : public BaseProject {
     glm::vec3 CamPos = glm::vec3(2.0, 2.0, 15.0);
     float CamAlpha = 0.0f;
     float CamBeta = 0.0f;
+
+	Game game;
 	// Here you set the main application parameters
 	void setWindowParameters() {
 		// window size, titile and initial background
@@ -84,6 +89,10 @@ class MeshLoader : public BaseProject {
 	// Here you load and setup all your Vulkan Models and Texutures.
 	// Here you also create your Descriptor set layouts and load the shaders for the pipelines
 	void localInit() {
+		// Create a game
+		game.init();
+
+		
 		// Descriptor Layouts [what will be passed to the shaders]
 		DSL.init(this, {
 					// this array contains the bindings:
@@ -339,6 +348,11 @@ class MeshLoader : public BaseProject {
 		// Standard procedure to quit when the ESC key is pressed
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
 			glfwSetWindowShouldClose(window, GL_TRUE);
+		}
+		
+		// Standard procedure to quit when the ESC key is pressed
+		if(glfwGetKey(window, GLFW_KEY_SPACE)) {
+			game.getBoard().displayBoard();
 		}
 		
 		// Integration with the timers and the controllers
