@@ -1,4 +1,4 @@
-#include "headers/pieces.h"
+#include "header/pieces.h"
 
 std::atomic<int> Piece::idCounter{0};
 

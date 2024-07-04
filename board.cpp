@@ -1,4 +1,4 @@
-#include "headers/board.h"
+#include "header/board.h"
 #include <iostream>
 #include <iomanip>
 

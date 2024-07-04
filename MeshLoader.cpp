@@ -1,7 +1,7 @@
 // This has been adapted from the Vulkan tutorial
 
 #include "Starter.hpp"
-#include "headers/game.h"
+#include "header/game.h"
 
 #include <memory> // For using smart pointers
 
