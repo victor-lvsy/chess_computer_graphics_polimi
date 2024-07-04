@@ -14,7 +14,6 @@ target_include_directories(chess.o PRIVATE ${Vulkan_INCLUDE_DIRS} ${GLM_INCLUDE_
 
 target_include_directories(chess.o PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/modules)
 target_include_directories(chess.o PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/headers)
-target_include_directories(chess.o PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/header)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
