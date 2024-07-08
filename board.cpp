@@ -5,7 +5,7 @@
 // Constructor
 
 Board::Board() : whiteIndex(0), blackIndex(0)
-{
+{ 
     // Resize the board to 8x8 with nullptr
     board.resize(8);
     for (auto &row : board)
