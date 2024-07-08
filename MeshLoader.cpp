@@ -1,7 +1,9 @@
 // This has been adapted from the Vulkan tutorial
 
 #include "Starter.hpp"
-#include "headers/game.h"
+#include "game.h"
+#include "pieces.h"
+
 
 #include <memory> // For using smart pointers
 
@@ -308,9 +310,9 @@ class MeshLoader : public BaseProject {
                 }else if(j==2 || j==3){
                     MP[i][j].init(this,   &VD, "models/Bishop.obj", OBJ);
                 }else if(j==4 || j==5){
-                    MP[i][j].init(this,   &VD, "models/Horse.obj", OBJ);
+                    MP[i][j].init(this,   &VD, "models/Knight.obj", OBJ);
                 }else if(j==6 || j==7){
-                    MP[i][j].init(this,   &VD, "models/Tower.obj", OBJ);
+                    MP[i][j].init(this,   &VD, "models/Rook.obj", OBJ);
                 }else{
                     MP[i][j].init(this,   &VD, "models/Pawn.obj", OBJ);
                 }
@@ -520,6 +522,7 @@ class MeshLoader : public BaseProject {
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
+        Board &board = game.getBoard();
 		// Standard procedure to quit when the ESC key is pressed
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
 			glfwSetWindowShouldClose(window, GL_TRUE);
@@ -534,6 +537,28 @@ class MeshLoader : public BaseProject {
 			game.getBoard().displayBoard();
 		}
 		spaceKeyWasPressed = isSpaceKeyPressed;
+
+        static bool PKeyWasPressed = false;
+		bool isPKeyPressed = (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS);
+
+		if (isPKeyPressed && !PKeyWasPressed) {
+			if (board.isLegalMove(board.getPiece(1, 1), 3, 1)){
+                board.movePiece(board.getPiece(1, 1), 3, 1);
+            }
+            if (board.isLegalMove(board.getPiece(3, 1), 4, 1)){
+                board.movePiece(board.getPiece(3, 1), 4, 1);
+            }
+            if (board.isLegalMove(board.getPiece(4, 1), 5, 1)){
+                board.movePiece(board.getPiece(4, 1), 5, 1);
+            }
+            if (board.isLegalMove(board.getPiece(5, 1), 6, 2)){
+                board.movePiece(board.getPiece(5, 1), 6, 2);
+            }
+            board.movePiece(board.getPiece(6, 2), 5, 1);
+            board.printAllPieces(Color::BLACK);
+            board.printAllPieces(Color::WHITE);
+		}
+		PKeyWasPressed = isPKeyPressed;
 		
 		// Integration with the timers and the controllers
 		float deltaT;
@@ -617,53 +642,42 @@ class MeshLoader : public BaseProject {
 
         int row;
         int col=-1;
-        for(int i=0; i<2; i++){
-            for(int j=0; j<16; j++){
-                if(i==0){
-                    if(j>7){
-                        row=1;
+        
+
+        const std::vector<Piece*>& pieces = board.getAllPieces();
+        for (const Piece* piece : pieces)
+        {
+            if(piece->isAlive()){
+                int i = -1, j = -1;
+                if(piece->getColor() == Color::WHITE) {
+                        World = glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[piece->getPosition().first][piece->getPosition().second])),
+                                        glm::vec3(10.0f, 10.0f, 10.0f));
+                        i = 0;
+                        j = piece->getID() - 1;
                     }else{
-                        row=0;
+                        World = glm::rotate(glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[piece->getPosition().first][piece->getPosition().second])),
+                                        glm::vec3(10.0f, 10.0f, 10.0f)),glm::radians(180.0f),glm::vec3(0,1,0));
+                        i = 1;
+                        j = piece->getID() - 17;
                     }
-                }else{
-                    if(j>7){
-                        row=6;
+                    uboP[i][j].mvpMat = ViewPrj * World;
+                    DSP[i][j].map(currentImage, &uboP[i][j], sizeof(uboP[i][j]), 0);
+            }
+            else{
+                int i = -1, j = -1;
+                if(piece->getColor() == Color::WHITE) {
+                        World = glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[piece->getPosition().first][piece->getPosition().second])),
+                                        glm::vec3(0.0f, 0.0f, 0.0f));
+                        i = 0;
+                        j = piece->getID() - 1;
                     }else{
-                        row=7;
+                        World = glm::rotate(glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[piece->getPosition().first][piece->getPosition().second])),
+                                        glm::vec3(0.0f, 0.0f, 0.0f)),glm::radians(180.0f),glm::vec3(0,1,0));
+                        i = 1;
+                        j = piece->getID() - 17;
                     }
-                }
-                if(j==0){
-                    col=4;
-                }else if(j==1){
-                    col=3;
-                }else if(j==2){
-                    col=2;
-                }else if(j==3){
-                    col=5;
-                }else if(j==4){
-                    col=1;
-                }else if(j==5){
-                    col=6;
-                }else if(j==6){
-                    col=0;
-                }else if(j==7){
-                    col=7;
-                }else{
-                    if(j==8){
-                        col=0;
-                    }else{
-                        col++;
-                    }
-                }
-                if(i==0) {
-                    World = glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[row][col])),
-                                       glm::vec3(10.0f, 10.0f, 10.0f));
-                }else{
-                    World = glm::rotate(glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[row][col])),
-                                       glm::vec3(10.0f, 10.0f, 10.0f)),glm::radians(180.0f),glm::vec3(0,1,0));
-                }
-                uboP[i][j].mvpMat = ViewPrj * World;
-                DSP[i][j].map(currentImage, &uboP[i][j], sizeof(uboP[i][j]), 0);
+                    uboP[i][j].mvpMat = ViewPrj * World;
+                    DSP[i][j].map(currentImage, &uboP[i][j], sizeof(uboP[i][j]), 0);
             }
         }
 	}	
