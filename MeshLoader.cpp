@@ -350,10 +350,15 @@ class MeshLoader : public BaseProject {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 		
-		// Standard procedure to quit when the ESC key is pressed
-		if(glfwGetKey(window, GLFW_KEY_SPACE)) {
+		// Standard procedure to quit when the SPACE key is pressed
+		// Handling of SPACE key for a single press event
+		static bool spaceKeyWasPressed = false;
+		bool isSpaceKeyPressed = (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS);
+
+		if (isSpaceKeyPressed && !spaceKeyWasPressed) {
 			game.getBoard().displayBoard();
 		}
+		spaceKeyWasPressed = isSpaceKeyPressed;
 		
 		// Integration with the timers and the controllers
 		float deltaT;
