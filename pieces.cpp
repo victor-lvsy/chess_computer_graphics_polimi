@@ -28,7 +28,10 @@ bool Piece::isAlive() const
 
 void Piece::kill()
 {
+    std::cout<<"KILL"<<std::endl;
+    print();
     alive = false;
+    print();
 }
 
 std::pair<int, int> Piece::getPosition() const
@@ -83,7 +86,6 @@ bool Pawn::isLegalMove(int newX, int newY) const
     {
         return true;
     }
-    
     // Check if move is a diagonal capture move
     if (newX == x + direction && (newY == y + 1 || newY == y - 1))
     {
