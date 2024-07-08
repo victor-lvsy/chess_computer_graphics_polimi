@@ -18,11 +18,26 @@ struct UniformBlock {
 	alignas(16) glm::mat4 mvpMat;
 };
 
+struct GlobalUniformBufferObject {
+    struct {
+        alignas(16) glm::vec3 v;
+    } lightDir[5];
+    struct {
+        alignas(16) glm::vec3 v;
+    } lightPos[5];
+    alignas(16) glm::vec4 lightColor;
+    alignas(4) float cosIn;
+    alignas(4) float cosOut;
+    alignas(16) glm::vec3 eyePos;
+    alignas(16) glm::vec4 eyeDir;
+};
+
 // The vertices data structures
 // Example
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec2 UV;
+    glm::vec3 normal;
 };
 
 
@@ -36,8 +51,10 @@ class MeshLoader : public BaseProject {
 	// Current aspect ratio (used by the callback that resized the window
 	float Ar;
 
+    GlobalUniformBufferObject gubo;
+
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSL;
+	DescriptorSetLayout DSL, DSL_GLOBAL;
 
 	// Vertex formats
 	VertexDescriptor VD;
@@ -50,7 +67,7 @@ class MeshLoader : public BaseProject {
 	// Models
 	Model<Vertex> MCB, M1, MC[8][8], MP[2][16];
 	// Descriptor sets
-	DescriptorSet DSCB, DS1, DSC[8][8], DSP[2][16];
+	DescriptorSet DSCB, DS1, DSC[8][8], DSP[2][16], globalDS;
 	// Textures
 	Texture T1, TB, TW;
 	
@@ -74,9 +91,9 @@ class MeshLoader : public BaseProject {
 		initialBackgroundColor = {0.0f, 1.0f, 1.0f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 100;
-		texturesInPool = 100;
-		setsInPool = 100;
+		uniformBlocksInPool = 105;
+		texturesInPool = 105;
+		setsInPool = 105;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -92,8 +109,25 @@ class MeshLoader : public BaseProject {
 		// Create a game
 		game.init();
 
-		
-		// Descriptor Layouts [what will be passed to the shaders]
+        gubo.lightPos[0].v = glm::vec3(4.0f, 5.0f, 4.0f);      // Posizione
+        gubo.lightPos[1].v = glm::vec3(0.0f, 5.0f, 0.0f);
+        gubo.lightPos[2].v = glm::vec3(0.0f, 5.0f, 8.0f);
+        gubo.lightPos[3].v = glm::vec3(8.0f, 5.0f, 8.0f);
+        gubo.lightPos[4].v = glm::vec3(8.0f, 5.0f, 0.0f);
+        gubo.lightDir[0].v = glm::vec3(0.0f, -1.0f, 0.0f);      // Direzione
+        gubo.lightDir[1].v = glm::vec3(0.0f, -1.0f, 0.0f);
+        gubo.lightDir[2].v = glm::vec3(0.0f, -1.0f, 0.0f);
+        gubo.lightDir[3].v = glm::vec3(0.0f, -1.0f, 0.0f);
+        gubo.lightDir[4].v = glm::vec3(0.0f, -1.0f, 0.0f);
+        gubo.cosIn = glm::cos(glm::radians(60.0f));        // Angolo interno di cutoff della spotlight
+        gubo.cosOut = glm::cos(glm::radians(75.0f));       // Angolo esterno di cutoff della spotlight
+        gubo.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // Colore della spotlight
+        gubo.eyePos = CamPos;                             // Posizione della camera
+        gubo.eyeDir = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f); // Direzione della camera (modificabile a seconda delle necessità)
+
+
+
+        // Descriptor Layouts [what will be passed to the shaders]
 		DSL.init(this, {
 					// this array contains the bindings:
 					// first  element : the binding number
@@ -104,6 +138,11 @@ class MeshLoader : public BaseProject {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 				});
+
+        // Global descriptor layout
+        DSL_GLOBAL.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT}
+        });
 
 		// Vertex descriptors
 		VD.init(this, {
@@ -137,7 +176,9 @@ class MeshLoader : public BaseProject {
 				  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
 				         sizeof(glm::vec3), POSITION},
 				  {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-				         sizeof(glm::vec2), UV}
+				         sizeof(glm::vec2), UV},
+                  {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                   sizeof(glm::vec3), NORMAL}
 				});
 
 		// Pipelines [Shader couples]
@@ -145,7 +186,9 @@ class MeshLoader : public BaseProject {
 		// Third and fourth parameters are respectively the vertex and fragment shaders
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
-		P.init(this, &VD, "shaders/ShaderVert.spv", "shaders/ShaderFrag.spv", {&DSL});
+		P.init(this, &VD, "shaders/ShaderVert.spv", "shaders/ShaderFrag.spv", {&DSL, &DSL_GLOBAL});
+        P.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+                              VK_CULL_MODE_BACK_BIT, false);
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
 
@@ -175,31 +218,49 @@ class MeshLoader : public BaseProject {
         // Creates a mesh with direct enumeration of vertices and indices
         MCB.vertices = {
                 //Top
-                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}},
-                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}},
-                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}},
-                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}},
+                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 1.0f, 0.0f}},
+                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 1.0f, 0.0f}},
+                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 1.0f, 0.0f}},
+                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 1.0f, 0.0f}},
                 // Bottom
-                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}},
-                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}},
-                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}},
-                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}}
-
-
+                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, -1.0f, 0.0f}},
+                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, -1.0f, 0.0f}},
+                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, -1.0f, 0.0f}},
+                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, -1.0f, 0.0f}},
+                //Left
+                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}, {-1.0f, 0.0f, 0.0f}},
+                //Right
+                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}, {1.0f, 0.0f, 0.0f}},
+                //Front
+                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                //Back
+                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
+                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
+                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
+                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 0.0f, -1.0f}}
         };
         MCB.indices = {
                 // Front face
-                1,5,6,1,6,2,
+                16,17,18,16,18,19,
                 // Back face
-                0,7,4,0,3,7,
+                20,21,22,20,22,23,
                 // Top face
                 0,1,2,0,2,3,
                 // Bottom face
                 4,6,5,4,7,6,
                 // Left face
-                0,4,5,0,5,1,
+                8,9,10,8,10,11,
                 // Right face
-                2,6,7,2,7,3
+                12,13,14,12,14,15
         };
         MCB.initMesh(this, &VD);
 
@@ -218,10 +279,10 @@ class MeshLoader : public BaseProject {
             for(int j=0; j<8; j++){
 
                 MC[i][j].vertices = {
-                        {{0.0f+(float)j, 0.0f, 0.0f+(float)i}, {u[0][c], v[0][c]}},
-                        {{0.0f+(float)j, 0.0f, 1.0f+(float)i}, {u[0][c], v[1][c]}},
-                        {{1.0f+(float)j, 0.0f, 1.0f+(float)i}, {u[1][c], v[1][c]}},
-                        {{1.0f+(float)j, 0.0f, 0.0f+(float)i}, {u[1][c], v[0][c]}},
+                        {{0.0f+(float)j, 0.0f, 0.0f+(float)i}, {u[0][c], v[0][c]}, {0.0f, 1.0f, 0.0f}},
+                        {{0.0f+(float)j, 0.0f, 1.0f+(float)i}, {u[0][c], v[1][c]}, {0.0f, 1.0f, 0.0f}},
+                        {{1.0f+(float)j, 0.0f, 1.0f+(float)i}, {u[1][c], v[1][c]}, {0.0f, 1.0f, 0.0f}},
+                        {{1.0f+(float)j, 0.0f, 0.0f+(float)i}, {u[1][c], v[0][c]}, {0.0f, 1.0f, 0.0f}},
                 };
                 MC[i][j].indices = { 0,1,2,0,2,3};
 
@@ -270,6 +331,10 @@ class MeshLoader : public BaseProject {
 	void pipelinesAndDescriptorSetsInit() {
 		// This creates a new pipeline (with the current surface), using its shaders
 		P.create();
+
+        globalDS.init(this, &DSL_GLOBAL, {
+                {0, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+        });
 
 		// Here you define the data set
         // the second parameter, is a pointer to the Uniform Set Layout of this set
@@ -341,6 +406,8 @@ class MeshLoader : public BaseProject {
                 DSP[i][j].cleanup();
             }
         }
+
+        globalDS.cleanup();
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -371,6 +438,7 @@ class MeshLoader : public BaseProject {
 		
 		// Cleanup descriptor set layouts
 		DSL.cleanup();
+        DSL_GLOBAL.cleanup();
 		
 		// Destroies the pipelines
 		P.destroy();		
@@ -385,7 +453,9 @@ class MeshLoader : public BaseProject {
 		P.bind(commandBuffer);
 		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
-		// binds the data set
+        globalDS.bind(commandBuffer, P, 1, currentImage);
+
+        // binds the data set
         DSCB.bind(commandBuffer, P, 0, currentImage);
         // For a Dataset object, this command binds the corresponing dataset
         // to the command buffer and pipeline passed in its first and second parameters.
@@ -512,6 +582,10 @@ class MeshLoader : public BaseProject {
                         glm::translate(glm::mat4(1.0), -CamPos);
 
         glm::mat4 ViewPrj =  M * Mv;
+        gubo.eyePos = CamPos;
+        gubo.eyeDir = glm::vec4(-CamPos, 0.0f);
+
+        globalDS.map(currentImage, &gubo, sizeof(gubo), 0);
 
 
         World = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
