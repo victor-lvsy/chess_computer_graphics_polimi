@@ -14,6 +14,7 @@ private:
     // Vectors to store all pieces of each color
     std::vector<Piece*> whitePieces;
     std::vector<Piece*> blackPieces;
+    std::vector<Piece*> allPieces;
     // Iteration indices for each color
     mutable size_t whiteIndex;
     mutable size_t blackIndex;
@@ -51,5 +52,7 @@ public:
     
     // Method to check if there is a checkmate situation
     bool isCheckmate(Color color);
-    // Additional methods for handling board logic can be added here
+
+    std::vector<Piece*> getAllPieces() const;
+
 };

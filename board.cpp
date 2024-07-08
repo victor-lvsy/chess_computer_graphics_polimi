@@ -19,6 +19,8 @@ void Board::placePiece(std::unique_ptr<Piece> piece, int x, int y)
     board[x][y] = std::move(piece);
 
     Piece* rawPiecePtr = board[x][y].get();
+
+    allPieces.push_back(rawPiecePtr);
     
     if (rawPiecePtr->getColor() == Color::WHITE) {
         whitePieces.push_back(rawPiecePtr);
@@ -53,9 +55,9 @@ Piece* Board::getNextPiece(Color color) const
 
 bool Board::isLegalMove(Piece *piece, int newX, int newY) const
 {
-    if (!piece || !piece->isLegalMove(newX, newY))
+    if (!piece || !piece->isLegalMove(newX, newY)){
         return false;
-
+    }
     int x = piece->getPosition().first;
     int y = piece->getPosition().second;
 
@@ -70,7 +72,6 @@ bool Board::isLegalMove(Piece *piece, int newX, int newY) const
     {
         int dx = newX - x;
         int dy = std::abs(newY - y);
-
         // Ensure diagonal captures are only valid if an enemy piece is present
         if (dy == 1 && board[newX][newY] == nullptr)
         {
@@ -332,3 +333,8 @@ void Board::printCapturedPieces() const
         }
     }
 }
+
+std::vector<Piece*> Board::getAllPieces() const{
+    return allPieces;
+}
+
