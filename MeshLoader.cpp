@@ -18,11 +18,26 @@ struct UniformBlock {
 	alignas(16) glm::mat4 mvpMat;
 };
 
+struct GlobalUniformBufferObject {
+    struct {
+        alignas(16) glm::vec3 v;
+    } lightDir[5];
+    struct {
+        alignas(16) glm::vec3 v;
+    } lightPos[5];
+    alignas(16) glm::vec4 lightColor;
+    alignas(4) float cosIn;
+    alignas(4) float cosOut;
+    alignas(16) glm::vec3 eyePos;
+    alignas(16) glm::vec4 eyeDir;
+};
+
 // The vertices data structures
 // Example
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec2 UV;
+    glm::vec3 normal;
 };
 
 
@@ -36,8 +51,10 @@ class MeshLoader : public BaseProject {
 	// Current aspect ratio (used by the callback that resized the window
 	float Ar;
 
+    GlobalUniformBufferObject gubo;
+
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSL;
+	DescriptorSetLayout DSL, DSL_GLOBAL;
 
 	// Vertex formats
 	VertexDescriptor VD;
@@ -48,18 +65,18 @@ class MeshLoader : public BaseProject {
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
 	// Models
-	Model<Vertex> MCB, M1, MC[8][8];
+	Model<Vertex> MCB, M1, MC[8][8], MP[2][16];
 	// Descriptor sets
-	DescriptorSet DSCB, DS1, DSC[8][8];
+	DescriptorSet DSCB, DS1, DSC[8][8], DSP[2][16], globalDS;
 	// Textures
-	Texture T1, T2;
+	Texture T1, TB, TW;
 	
 	// C++ storage for uniform variables
-	UniformBlock uboCB, ubo1, uboC[8][8];
+	UniformBlock uboCB, ubo1, uboC[8][8], uboP[2][16];
 
 	// Other application parameters
     int currScene = 0;
-    glm::vec3 CamPos = glm::vec3(2.0, 2.0, 15.0);
+    glm::vec3 CamPos = glm::vec3(4.0, 3.0, 19.0);
     float CamAlpha = 0.0f;
     float CamBeta = 0.0f;
 
@@ -74,9 +91,9 @@ class MeshLoader : public BaseProject {
 		initialBackgroundColor = {0.0f, 1.0f, 1.0f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 70;
-		texturesInPool = 70;
-		setsInPool = 70;
+		uniformBlocksInPool = 105;
+		texturesInPool = 105;
+		setsInPool = 105;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -92,8 +109,25 @@ class MeshLoader : public BaseProject {
 		// Create a game
 		game.init();
 
-		
-		// Descriptor Layouts [what will be passed to the shaders]
+        gubo.lightPos[0].v = glm::vec3(4.0f, 5.0f, 4.0f);      // Posizione
+        gubo.lightPos[1].v = glm::vec3(0.0f, 5.0f, 0.0f);
+        gubo.lightPos[2].v = glm::vec3(0.0f, 5.0f, 8.0f);
+        gubo.lightPos[3].v = glm::vec3(8.0f, 5.0f, 8.0f);
+        gubo.lightPos[4].v = glm::vec3(8.0f, 5.0f, 0.0f);
+        gubo.lightDir[0].v = glm::vec3(0.0f, -1.0f, 0.0f);      // Direzione
+        gubo.lightDir[1].v = glm::vec3(0.0f, -1.0f, 0.0f);
+        gubo.lightDir[2].v = glm::vec3(0.0f, -1.0f, 0.0f);
+        gubo.lightDir[3].v = glm::vec3(0.0f, -1.0f, 0.0f);
+        gubo.lightDir[4].v = glm::vec3(0.0f, -1.0f, 0.0f);
+        gubo.cosIn = glm::cos(glm::radians(60.0f));        // Angolo interno di cutoff della spotlight
+        gubo.cosOut = glm::cos(glm::radians(75.0f));       // Angolo esterno di cutoff della spotlight
+        gubo.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); // Colore della spotlight
+        gubo.eyePos = CamPos;                             // Posizione della camera
+        gubo.eyeDir = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f); // Direzione della camera (modificabile a seconda delle necessità)
+
+
+
+        // Descriptor Layouts [what will be passed to the shaders]
 		DSL.init(this, {
 					// this array contains the bindings:
 					// first  element : the binding number
@@ -104,6 +138,11 @@ class MeshLoader : public BaseProject {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 				});
+
+        // Global descriptor layout
+        DSL_GLOBAL.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT}
+        });
 
 		// Vertex descriptors
 		VD.init(this, {
@@ -137,7 +176,9 @@ class MeshLoader : public BaseProject {
 				  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
 				         sizeof(glm::vec3), POSITION},
 				  {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-				         sizeof(glm::vec2), UV}
+				         sizeof(glm::vec2), UV},
+                  {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal),
+                   sizeof(glm::vec3), NORMAL}
 				});
 
 		// Pipelines [Shader couples]
@@ -145,7 +186,9 @@ class MeshLoader : public BaseProject {
 		// Third and fourth parameters are respectively the vertex and fragment shaders
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
-		P.init(this, &VD, "shaders/ShaderVert.spv", "shaders/ShaderFrag.spv", {&DSL});
+		P.init(this, &VD, "shaders/ShaderVert.spv", "shaders/ShaderFrag.spv", {&DSL, &DSL_GLOBAL});
+        P.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+                              VK_CULL_MODE_BACK_BIT, false);
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
 
@@ -172,33 +215,52 @@ class MeshLoader : public BaseProject {
         u[1][2]= 9.1f / 11.0f;
         v[1][2] = 2.0f / 11.0f;
 
+        // Creates a mesh with direct enumeration of vertices and indices
         MCB.vertices = {
                 //Top
-                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}},
-                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}},
-                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}},
-                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}},
+                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 1.0f, 0.0f}},
+                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 1.0f, 0.0f}},
+                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 1.0f, 0.0f}},
+                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 1.0f, 0.0f}},
                 // Bottom
-                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}},
-                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}},
-                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}},
-                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}}
-
-
+                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, -1.0f, 0.0f}},
+                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, -1.0f, 0.0f}},
+                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, -1.0f, 0.0f}},
+                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, -1.0f, 0.0f}},
+                //Left
+                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}, {-1.0f, 0.0f, 0.0f}},
+                //Right
+                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}, {1.0f, 0.0f, 0.0f}},
+                //Front
+                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                //Back
+                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
+                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
+                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
+                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 0.0f, -1.0f}}
         };
         MCB.indices = {
                 // Front face
-                1,5,6,1,6,2,
+                16,17,18,16,18,19,
                 // Back face
-                0,7,4,0,3,7,
+                20,21,22,20,22,23,
                 // Top face
                 0,1,2,0,2,3,
                 // Bottom face
                 4,6,5,4,7,6,
                 // Left face
-                0,4,5,0,5,1,
+                8,9,10,8,10,11,
                 // Right face
-                2,6,7,2,7,3
+                12,13,14,12,14,15
         };
         MCB.initMesh(this, &VD);
 
@@ -217,10 +279,10 @@ class MeshLoader : public BaseProject {
             for(int j=0; j<8; j++){
 
                 MC[i][j].vertices = {
-                        {{0.0f+(float)j, 0.0f, 0.0f+(float)i}, {u[0][c], v[0][c]}},
-                        {{0.0f+(float)j, 0.0f, 1.0f+(float)i}, {u[0][c], v[1][c]}},
-                        {{1.0f+(float)j, 0.0f, 1.0f+(float)i}, {u[1][c], v[1][c]}},
-                        {{1.0f+(float)j, 0.0f, 0.0f+(float)i}, {u[1][c], v[0][c]}},
+                        {{0.0f+(float)j, 0.0f, 0.0f+(float)i}, {u[0][c], v[0][c]}, {0.0f, 1.0f, 0.0f}},
+                        {{0.0f+(float)j, 0.0f, 1.0f+(float)i}, {u[0][c], v[1][c]}, {0.0f, 1.0f, 0.0f}},
+                        {{1.0f+(float)j, 0.0f, 1.0f+(float)i}, {u[1][c], v[1][c]}, {0.0f, 1.0f, 0.0f}},
+                        {{1.0f+(float)j, 0.0f, 0.0f+(float)i}, {u[1][c], v[0][c]}, {0.0f, 1.0f, 0.0f}},
                 };
                 MC[i][j].indices = { 0,1,2,0,2,3};
 
@@ -235,10 +297,32 @@ class MeshLoader : public BaseProject {
             }
         }
 
+        //M1.init(this,   &VD, "models/Pawn.obj", OBJ);
+
+        for(int i=0; i<2; i++){
+            for(int j=0; j<16; j++){
+                if(j==0){
+                    MP[i][j].init(this,   &VD, "models/King.obj", OBJ);
+                }else if(j==1){
+                    MP[i][j].init(this,   &VD, "models/Queen.obj", OBJ);
+                }else if(j==2 || j==3){
+                    MP[i][j].init(this,   &VD, "models/Bishop.obj", OBJ);
+                }else if(j==4 || j==5){
+                    MP[i][j].init(this,   &VD, "models/Horse.obj", OBJ);
+                }else if(j==6 || j==7){
+                    MP[i][j].init(this,   &VD, "models/Tower.obj", OBJ);
+                }else{
+                    MP[i][j].init(this,   &VD, "models/Pawn.obj", OBJ);
+                }
+            }
+        }
+
 		// Create the textures
 		// The second parameter is the file name
-		T1.init(this,   "textures/Checker.png");
-		T2.init(this,   "textures/Textures.png");
+		T1.init(this, "textures/Textures.png");
+        TB.init(this, "textures/ChessPiecesBlack.png");
+        TW.init(this, "textures/ChessPiecesWhite.png");
+
 		
 		// Init local variables
 	}
@@ -248,23 +332,54 @@ class MeshLoader : public BaseProject {
 		// This creates a new pipeline (with the current surface), using its shaders
 		P.create();
 
+        globalDS.init(this, &DSL_GLOBAL, {
+                {0, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+        });
+
 		// Here you define the data set
+        // the second parameter, is a pointer to the Uniform Set Layout of this set
+        // the last parameter is an array, with one element per binding of the set.
+        // first  elmenet : the binding number
+        // second element : UNIFORM or TEXTURE (an enum) depending on the type
+        // third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
+        // fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
 
         DSCB.init(this, &DSL, {
                 {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &T2}
+                {1, TEXTURE, 0, &T1}
         });
         /*DS1.init(this, &DSL, {
                 {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &T2}
+                {1, TEXTURE, 0, &T1}
         });*/
 
         for(int i=0; i<8; i++){
             for(int j=0; j<8; j++){
                 DSC[i][j].init(this, &DSL, {
                         {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                        {1, TEXTURE, 0, &T2}
+                        {1, TEXTURE, 0, &T1}
                 });
+            }
+        }
+
+        /*DS1.init(this, &DSL, {
+                {0, UNIFORM, sizeof(UniformBlock), nullptr},
+                {1, TEXTURE, 0, &TB}
+        });*/
+
+        for(int i=0; i<2; i++){
+            for(int j=0; j<16; j++){
+                if(i==0){
+                    DSP[i][j].init(this, &DSL, {
+                            {0, UNIFORM, sizeof(UniformBlock), nullptr},
+                            {1, TEXTURE, 0, &TB}
+                    });
+                }else{
+                    DSP[i][j].init(this, &DSL, {
+                            {0, UNIFORM, sizeof(UniformBlock), nullptr},
+                            {1, TEXTURE, 0, &TW}
+                    });
+                }
             }
         }
 	}
@@ -284,6 +399,15 @@ class MeshLoader : public BaseProject {
                 DSC[i][j].cleanup();
             }
         }
+        //DS1.cleanup();
+
+        for(int i=0; i<2; i++){
+            for(int j=0; j<16; j++){
+                DSP[i][j].cleanup();
+            }
+        }
+
+        globalDS.cleanup();
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -293,7 +417,8 @@ class MeshLoader : public BaseProject {
 	void localCleanup() {
 		// Cleanup textures
 		T1.cleanup();
-		T2.cleanup();
+        TB.cleanup();
+        TW.cleanup();
 		
 		// Cleanup models
 
@@ -304,9 +429,16 @@ class MeshLoader : public BaseProject {
                 MC[i][j].cleanup();
             }
         }
+        //M1.cleanup();
+        for(int i=0; i<2; i++){
+            for(int j=0; j<16; j++){
+                MP[i][j].cleanup();
+            }
+        }
 		
 		// Cleanup descriptor set layouts
 		DSL.cleanup();
+        DSL_GLOBAL.cleanup();
 		
 		// Destroies the pipelines
 		P.destroy();		
@@ -321,12 +453,28 @@ class MeshLoader : public BaseProject {
 		P.bind(commandBuffer);
 		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
-		// binds the data set
+        globalDS.bind(commandBuffer, P, 1, currentImage);
 
+        // binds the data set
         DSCB.bind(commandBuffer, P, 0, currentImage);
+        // For a Dataset object, this command binds the corresponing dataset
+        // to the command buffer and pipeline passed in its first and second parameters.
+        // The third parameter is the number of the set being bound
+        // As described in the Vulkan tutorial, a different dataset is required for each image in the swap chain.
+        // This is done automatically in file Starter.hpp, however the command here needs also the index
+        // of the current image in the swap chain, passed in its last parameter
+
+        // binds the model
         MCB.bind(commandBuffer);
+        // For a Model object, this command binds the corresponing index and vertex buffer
+        // to the command buffer passed in its parameter
+
+        // record the drawing command in the command buffer
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MCB.indices.size()), 1, 0, 0, 0);
+        // the second parameter is the number of indexes to be drawn. For a Model object,
+        // this can be retrieved with the .indices.size() method.
+
         /*DS1.bind(commandBuffer, P, 0, currentImage);
         M1.bind(commandBuffer);
         vkCmdDrawIndexed(commandBuffer,
@@ -339,8 +487,35 @@ class MeshLoader : public BaseProject {
                                  static_cast<uint32_t>(MC[i][j].indices.size()), 1, 0, 0, 0);
             }
         }
+        /*DS1.bind(commandBuffer, P, 0, currentImage);
+        M1.bind(commandBuffer);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(M1.indices.size()), 1, 0, 0, 0);*/
+
+        for(int i=0; i<2; i++){
+            for(int j=0; j<16; j++){
+                DSP[i][j].bind(commandBuffer, P, 0, currentImage);
+                MP[i][j].bind(commandBuffer);
+                vkCmdDrawIndexed(commandBuffer,
+                                 static_cast<uint32_t>(MP[i][j].indices.size()), 1, 0, 0, 0);
+            }
+        }
 
 	}
+
+    glm::vec3 calculateCenter(const Model<Vertex>& model) {
+        glm::vec3 center(0.0f);
+
+        // Somma le posizioni dei 4 vertici del quadrato
+        for (int i = 0; i < 4; ++i) {
+            center += model.vertices[i].pos;
+        }
+
+        // Calcola la media delle posizioni
+        center /= 4.0f;
+
+        return center;
+    }
 
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
@@ -378,6 +553,15 @@ class MeshLoader : public BaseProject {
 		
 		// Parameters
 		// Camera FOV-y, Near Plane and Far Plane
+        /*(this is a static camera)const float FOVy = glm::radians(90.0f);
+		const float nearPlane = 0.1f;
+		const float farPlane = 100.0f;
+
+		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
+		Prj[1][1] *= -1;
+		glm::vec3 camTarget = glm::vec3(0,0,0);
+		glm::vec3 camPos    = camTarget + glm::vec3(6,3,10) / 2.0f;
+		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0,1,0));*/
 
         const float ROT_SPEED = glm::radians(120.0f);
         const float MOVE_SPEED = 2.0f;
@@ -403,19 +587,83 @@ class MeshLoader : public BaseProject {
                         glm::translate(glm::mat4(1.0), -CamPos);
 
         glm::mat4 ViewPrj =  M * Mv;
+        gubo.eyePos = CamPos;
+        gubo.eyeDir = glm::vec4(-CamPos, 0.0f);
+
+        globalDS.map(currentImage, &gubo, sizeof(gubo), 0);
 
 
-        World = glm::translate(glm::mat4(1), glm::vec3(-2, -1, -2));
+        World = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
         uboCB.mvpMat = ViewPrj * World;
         DSCB.map(currentImage, &uboCB, sizeof(uboCB), 0);
         /*World = glm::translate(glm::mat4(1), glm::vec3(-2, -1, -2));
         ubo1.mvpMat = ViewPrj * World;
         DS1.map(currentImage, &ubo1, sizeof(ubo1), 0);*/
+        // the .map() method of a DataSet object, requires the current image of the swap chain as first parameter
+        // the second parameter is the pointer to the C++ data structure to transfer to the GPU
+        // the third parameter is its size
+        // the fourth parameter is the location inside the descriptor set of this uniform block
+        
         for(int i=0; i<8; i++){
             for(int j=0; j<8; j++){
-                World = glm::translate(glm::mat4(1), glm::vec3(-2, -1, -2));
+                World = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
                 uboC[i][j].mvpMat = ViewPrj * World;
                 DSC[i][j].map(currentImage, &uboC[i][j], sizeof(uboC[i][j]), 0);
+            }
+        }
+        /*World = glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[0][0])), glm::vec3(10.0f, 10.0f, 10.0f));
+        ubo1.mvpMat = ViewPrj * World;
+        DS1.map(currentImage, &ubo1, sizeof(ubo1), 0);*/
+
+        int row;
+        int col=-1;
+        for(int i=0; i<2; i++){
+            for(int j=0; j<16; j++){
+                if(i==0){
+                    if(j>7){
+                        row=1;
+                    }else{
+                        row=0;
+                    }
+                }else{
+                    if(j>7){
+                        row=6;
+                    }else{
+                        row=7;
+                    }
+                }
+                if(j==0){
+                    col=4;
+                }else if(j==1){
+                    col=3;
+                }else if(j==2){
+                    col=2;
+                }else if(j==3){
+                    col=5;
+                }else if(j==4){
+                    col=1;
+                }else if(j==5){
+                    col=6;
+                }else if(j==6){
+                    col=0;
+                }else if(j==7){
+                    col=7;
+                }else{
+                    if(j==8){
+                        col=0;
+                    }else{
+                        col++;
+                    }
+                }
+                if(i==0) {
+                    World = glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[row][col])),
+                                       glm::vec3(10.0f, 10.0f, 10.0f));
+                }else{
+                    World = glm::rotate(glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[row][col])),
+                                       glm::vec3(10.0f, 10.0f, 10.0f)),glm::radians(180.0f),glm::vec3(0,1,0));
+                }
+                uboP[i][j].mvpMat = ViewPrj * World;
+                DSP[i][j].map(currentImage, &uboP[i][j], sizeof(uboP[i][j]), 0);
             }
         }
 	}	
