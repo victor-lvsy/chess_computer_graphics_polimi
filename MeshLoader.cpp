@@ -3,9 +3,31 @@
 #include "Starter.hpp"
 #include "game.h"
 #include "pieces.h"
+#include "TextMaker.hpp"
 
 
 #include <memory> // For using smart pointers
+
+std::vector<SingleText> outText = {
+        {1, {"Pawn 1", "", "", ""}, 0, 0},
+        {1, {"Pawn 2", "", "", ""}, 0, 0},
+        {1, {"Pawn 3", "", "", ""}, 0, 0},
+        {1, {"Pawn 4", "", "", ""}, 0, 0},
+        {1, {"Pawn 5", "", "", ""}, 0, 0},
+        {1, {"Pawn 6", "", "", ""}, 0, 0},
+        {1, {"Pawn 7", "", "", ""}, 0, 0},
+        {1, {"Pawn 8", "", "", ""}, 0, 0},
+        {1, {"Rook L", "", "", ""}, 0, 0},
+        {1, {"Horse L", "", "", ""}, 0, 0},
+        {1, {"Knight L", "", "", ""}, 0, 0},
+        {1, {"Queen", "", "", ""}, 0, 0},
+        {1, {"King", "", "", ""}, 0, 0},
+        {1, {"Knight R", "", "", ""}, 0, 0},
+        {1, {"Horse R", "", "", ""}, 0, 0},
+        {1, {"Rook R", "", "", ""}, 0, 0},
+        {1, {"Project Chess", "", "", ""}, 0, 0}
+
+};
 
 // The uniform buffer objects data structures
 // Remember to use the correct alignas(...) value
@@ -76,13 +98,25 @@ class MeshLoader : public BaseProject {
 	// C++ storage for uniform variables
 	UniformBlock uboCB, ubo1, uboC[8][8], uboP[2][16];
 
+    TextMaker txt;
+
 	// Other application parameters
+    int piece=-1;
+    int currText = 16;
+    int currPlayer=1;  // 1==WHITE 0==BLACK
     int currScene = 0;
-    glm::vec3 CamPos = glm::vec3(4.0, 3.0, 19.0);
-    float CamAlpha = 0.0f;
+    //glm::vec3 CamPos = glm::vec3(4.0, 3.0, 19.0);
+    //float CamAlpha = 0.0f;
+    glm::vec3 CamPos = glm::vec3(4.0, 3.0, -11.0);
+    float CamAlpha = glm::radians(-180.0f);
     float CamBeta = 0.0f;
 
-	Game game;
+    bool isCameraFixed = false;
+    glm::vec3 fixedCamPos = glm::vec3(0.5f, 1.0f, 6.5f);
+    glm::vec3 fixedCamDir = glm::vec3(0.0f, 0.0f, -1.0f);
+
+
+    Game game;
 	// Here you set the main application parameters
 	void setWindowParameters() {
 		// window size, titile and initial background
@@ -199,8 +233,8 @@ class MeshLoader : public BaseProject {
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
 
-        float u[2][3];
-        float v[2][3];
+        float u[2][4];
+        float v[2][4];
         //black
         u[0][0] = 9.1f/11.0f;
         v[0][0] = 1.0f/11.0f;
@@ -216,6 +250,11 @@ class MeshLoader : public BaseProject {
         v[0][2] = 1.0f / 11.0f;
         u[1][2]= 9.1f / 11.0f;
         v[1][2] = 2.0f / 11.0f;
+        //green
+        u[0][3] = 5.05f / 11.0f;
+        v[0][3] = 6.1f / 11.0f;
+        u[1][3]= 6.05f / 11.0f;
+        v[1][3] = 7.0f / 11.0f;
 
         // Creates a mesh with direct enumeration of vertices and indices
         MCB.vertices = {
@@ -325,6 +364,8 @@ class MeshLoader : public BaseProject {
         TB.init(this, "textures/ChessPiecesBlack.png");
         TW.init(this, "textures/ChessPiecesWhite.png");
 
+        txt.init(this, &outText);
+
 		
 		// Init local variables
 	}
@@ -384,6 +425,8 @@ class MeshLoader : public BaseProject {
                 }
             }
         }
+
+        txt.pipelinesAndDescriptorSetsInit();
 	}
 
 	// Here you destroy your pipelines and Descriptor Sets!
@@ -410,6 +453,8 @@ class MeshLoader : public BaseProject {
         }
 
         globalDS.cleanup();
+
+        txt.pipelinesAndDescriptorSetsCleanup();
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -443,8 +488,9 @@ class MeshLoader : public BaseProject {
         DSL_GLOBAL.cleanup();
 		
 		// Destroies the pipelines
-		P.destroy();		
-	}
+		P.destroy();
+        txt.localCleanup();
+    }
 	
 	// Here it is the creation of the command buffer:
 	// You send to the GPU all the objects you want to draw,
@@ -503,6 +549,8 @@ class MeshLoader : public BaseProject {
             }
         }
 
+        txt.populateCommandBuffer(commandBuffer, currentImage, currText);
+
 	}
 
     glm::vec3 calculateCenter(const Model<Vertex>& model) {
@@ -522,6 +570,7 @@ class MeshLoader : public BaseProject {
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
+
         Board &board = game.getBoard();
 		// Standard procedure to quit when the ESC key is pressed
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
@@ -559,6 +608,138 @@ class MeshLoader : public BaseProject {
             board.printAllPieces(Color::WHITE);
 		}
 		PKeyWasPressed = isPKeyPressed;
+
+
+        static bool MKeyWasPressed = false;
+        bool isMKeyPressed = (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS);
+        if (isMKeyPressed && !MKeyWasPressed) {
+            isCameraFixed = true;
+            piece++;
+            if(piece<8) {
+                if(currPlayer==0) {
+                    fixedCamPos = glm::vec3(0.5f + piece, 1.0f, 6.5f);
+                }else{
+                    fixedCamPos = glm::vec3(7.5f - piece, 1.0f, 1.5f);
+                }
+            }else if(piece>=8 && piece!=16){
+                if(currPlayer==0) {
+                    fixedCamPos = glm::vec3(0.5f + (piece - 8), 0.8f, 7.5f);
+                }else{
+                    fixedCamPos = glm::vec3(7.5f - (piece - 8), 0.8f, 0.5f);
+                }
+            }else if(piece==16){
+                piece=0;
+                if(currPlayer==0) {
+                    fixedCamPos = glm::vec3(0.5f + piece, 1.0f, 6.5f);
+                }else{
+                    fixedCamPos = glm::vec3(7.5f - piece, 1.0f, 1.5f);
+                }
+            }
+            if(currPlayer==0 || (piece!=11 && piece!=12) ){
+                currText=piece;
+            }else{
+                if(piece==11){
+                    currText=12;
+                }else{
+                    currText=11;
+                }
+            }
+            if(currPlayer==0) {
+                CamAlpha = 0.0f;
+            }else{
+                CamAlpha = glm::radians(-180.0f);
+            }
+            CamBeta = 0.0f;
+            RebuildPipeline();
+        }
+        MKeyWasPressed = isMKeyPressed;
+
+        static bool NKeyWasPressed = false;
+        bool isNKeyPressed = (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS);
+        if (isNKeyPressed && !NKeyWasPressed) {
+            isCameraFixed = true;
+            piece--;
+            if(piece<8 && piece!=-1) {
+                if(currPlayer==0) {
+                    fixedCamPos = glm::vec3(0.5f + piece, 1.0f, 6.5f);
+                }else{
+                    fixedCamPos = glm::vec3(7.5f - piece, 1.0f, 1.5f);
+                }
+            }else if(piece>=8){
+                if(currPlayer==0) {
+                    fixedCamPos = glm::vec3(0.5f + (piece - 8), 0.8f, 7.5f);
+                }else{
+                    fixedCamPos = glm::vec3(7.5f - (piece - 8), 0.8f, 0.5f);
+                }
+            }else if(piece==-1){
+                piece=15;
+                if(currPlayer==0) {
+                    fixedCamPos = glm::vec3(0.5f + (piece - 8), 0.8f, 7.5f);
+                }else{
+                    fixedCamPos = glm::vec3(7.5f - (piece - 8), 0.8f, 0.5f);
+                }
+            }
+            if(currPlayer==0 || (piece!=11 && piece!=12) ){
+                currText=piece;
+            }else{
+                if(piece==11){
+                    currText=12;
+                }else{
+                    currText=11;
+                }
+            }
+            if(currPlayer==0) {
+                CamAlpha = 0.0f;
+            }else{
+                CamAlpha = glm::radians(-180.0f);
+            }
+            CamBeta = 0.0f;
+            RebuildPipeline();
+        }
+        NKeyWasPressed = isNKeyPressed;
+
+        static bool XKeyWasPressed = false;
+        bool isXKeyPressed = (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS);
+        if (isXKeyPressed && !XKeyWasPressed) {
+            if(currPlayer==0) {
+                CamPos = glm::vec3(4.0, 3.0, 19.0);
+            }else{
+                CamPos = glm::vec3(4.0, 3.0, -11.0);
+            }
+            isCameraFixed = false;
+            if(currPlayer==0) {
+                CamAlpha = 0.0f;
+            }else{
+                CamAlpha = glm::radians(-180.0f);
+            }
+            CamBeta = 0.0f;
+            currText=16;
+            RebuildPipeline();
+        }
+        XKeyWasPressed = isXKeyPressed;
+
+        //Z key have to be removed, only for showing purpose
+        static bool ZKeyWasPressed = false;
+        bool isZKeyPressed = (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS);
+        if (isZKeyPressed && !ZKeyWasPressed) {
+            currPlayer=!currPlayer;
+            piece=-1;
+            if(currPlayer==0) {
+                CamPos = glm::vec3(4.0, 3.0, 19.0);
+            }else{
+                CamPos = glm::vec3(4.0, 3.0, -11.0);
+            }
+            isCameraFixed = false;
+            if(currPlayer==0) {
+                CamAlpha = 0.0f;
+            }else{
+                CamAlpha = glm::radians(-180.0f);
+            }
+            CamBeta = 0.0f;
+            currText=16;
+            RebuildPipeline();
+        }
+        ZKeyWasPressed = isZKeyPressed;
 		
 		// Integration with the timers and the controllers
 		float deltaT;
@@ -591,16 +772,27 @@ class MeshLoader : public BaseProject {
         const float ROT_SPEED = glm::radians(120.0f);
         const float MOVE_SPEED = 2.0f;
 
-        CamAlpha = CamAlpha - ROT_SPEED * deltaT * r.y;
-        CamBeta  = CamBeta  - ROT_SPEED * deltaT * r.x;
-        CamBeta  =  CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
-                    (CamBeta > glm::radians( 90.0f) ? glm::radians( 90.0f) : CamBeta);
+        if (!isCameraFixed) {
+            CamAlpha = CamAlpha - ROT_SPEED * deltaT * r.y;
+            CamBeta = CamBeta - ROT_SPEED * deltaT * r.x;
+            CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
+                      (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
 
-        glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0,1,0)) * glm::vec4(1,0,0,1);
-        glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0,1,0)) * glm::vec4(0,0,-1,1);
-        CamPos = CamPos + MOVE_SPEED * m.x * ux * deltaT;
-        CamPos = CamPos + MOVE_SPEED * m.y * glm::vec3(0,1,0) * deltaT;
-        CamPos = CamPos + MOVE_SPEED * m.z * uz * deltaT;
+            glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
+            glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 1);
+            CamPos = CamPos + MOVE_SPEED * m.x * ux * deltaT;
+            CamPos = CamPos + MOVE_SPEED * m.y * glm::vec3(0, 1, 0) * deltaT;
+            CamPos = CamPos + MOVE_SPEED * m.z * uz * deltaT;
+        }else {
+            CamPos = fixedCamPos;
+            CamAlpha = CamAlpha - ROT_SPEED * deltaT * r.y;
+            CamBeta = CamBeta - ROT_SPEED * deltaT * r.x;
+            CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
+                      (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
+
+            glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
+            glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 1);
+        }
 
 
 		glm::mat4 World;
