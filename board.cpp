@@ -53,6 +53,21 @@ Piece* Board::getNextPiece(Color color) const
     }
 }
 
+Piece* Board::getPrevPiece(Color color) const
+{
+    if (color == Color::WHITE) {
+        if (whitePieces.empty()) return nullptr;
+        Piece* piece = whitePieces[whiteIndex];
+        whiteIndex = (whiteIndex - 1 > 0) ? whiteIndex - 1 : whitePieces.size() - 1;
+        return piece;
+    } else {
+        if (blackPieces.empty()) return nullptr;
+        Piece* piece = blackPieces[blackIndex];
+        blackIndex = (blackIndex - 1 > 0) ? blackIndex - 1 : blackPieces.size() - 1;
+        return piece;
+    }
+}
+
 bool Board::isLegalMove(Piece *piece, int newX, int newY) const
 {
     if (!piece || !piece->isLegalMove(newX, newY)){
