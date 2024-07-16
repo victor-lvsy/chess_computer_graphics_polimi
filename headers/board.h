@@ -16,8 +16,8 @@ private:
     std::vector<Piece*> blackPieces;
     std::vector<Piece*> allPieces;
     // Iteration indices for each color
-    mutable size_t whiteIndex;
-    mutable size_t blackIndex;
+    mutable int whiteIndex;
+    mutable int blackIndex;
     // Vector to store captured pieces
     std::vector<std::unique_ptr<Piece>> capturedPieces;
 
@@ -49,6 +49,7 @@ public:
 
     void resetHover(Color color) const;
     Piece* getNextPiece(Color color) const;
+    Piece* getPrevPiece(Color color) const;
     
     // Method to check if there is a checkmate situation
     bool isCheckmate(Color color);

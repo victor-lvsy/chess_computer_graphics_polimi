@@ -103,7 +103,7 @@ class MeshLoader : public BaseProject {
 	// Other application parameters
     int piece=-1;
     int currText = 16;
-    int currPlayer=1;  // 1==WHITE 0==BLACK
+    Color currPlayer = Color::WHITE;  // 1==WHITE 0==BLACK
     int currScene = 0;
     //glm::vec3 CamPos = glm::vec3(4.0, 11.5, 19.0);
     //float CamAlpha = 0.0f;
@@ -620,6 +620,17 @@ class MeshLoader : public BaseProject {
         return center;
     }
 
+    // Function to swap colors
+    Color swapColor(Color color) {
+        return (color == Color::WHITE) ? Color::BLACK : Color::WHITE;
+    }
+
+    // Get camera pos given a piece
+    glm::vec3 getCameraPosition(Piece* piece) {
+        float y = (piece->getType() != PieceType::PAWN) ? 0.8f : 1.0f;
+        return glm::vec3(static_cast< float >(piece->getPosition().second) +0.5f, y, static_cast< float >(piece->getPosition().first) +0.5f);
+    }
+
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
@@ -667,37 +678,10 @@ class MeshLoader : public BaseProject {
         bool isMKeyPressed = (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS);
         if (isMKeyPressed && !MKeyWasPressed) {
             isCameraFixed = true;
-            piece++;
-            if(piece<8) {
-                if(currPlayer==0) {
-                    fixedCamPos = glm::vec3(0.5f + piece, 1.0f, 6.5f);
-                }else{
-                    fixedCamPos = glm::vec3(7.5f - piece, 1.0f, 1.5f);
-                }
-            }else if(piece>=8 && piece!=16){
-                if(currPlayer==0) {
-                    fixedCamPos = glm::vec3(0.5f + (piece - 8), 0.8f, 7.5f);
-                }else{
-                    fixedCamPos = glm::vec3(7.5f - (piece - 8), 0.8f, 0.5f);
-                }
-            }else if(piece==16){
-                piece=0;
-                if(currPlayer==0) {
-                    fixedCamPos = glm::vec3(0.5f + piece, 1.0f, 6.5f);
-                }else{
-                    fixedCamPos = glm::vec3(7.5f - piece, 1.0f, 1.5f);
-                }
-            }
-            if(currPlayer==0 || (piece!=11 && piece!=12) ){
-                currText=piece;
-            }else{
-                if(piece==11){
-                    currText=12;
-                }else{
-                    currText=11;
-                }
-            }
-            if(currPlayer==0) {
+            Piece* currPiece = board.getNextPiece(currPlayer);
+            currPiece->print();
+            fixedCamPos = getCameraPosition(currPiece);
+            if(currPlayer==Color::BLACK) {
                 CamAlpha = 0.0f;
             }else{
                 CamAlpha = glm::radians(-180.0f);
@@ -711,37 +695,10 @@ class MeshLoader : public BaseProject {
         bool isNKeyPressed = (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS);
         if (isNKeyPressed && !NKeyWasPressed) {
             isCameraFixed = true;
-            piece--;
-            if(piece<8 && piece!=-1) {
-                if(currPlayer==0) {
-                    fixedCamPos = glm::vec3(0.5f + piece, 1.0f, 6.5f);
-                }else{
-                    fixedCamPos = glm::vec3(7.5f - piece, 1.0f, 1.5f);
-                }
-            }else if(piece>=8){
-                if(currPlayer==0) {
-                    fixedCamPos = glm::vec3(0.5f + (piece - 8), 0.8f, 7.5f);
-                }else{
-                    fixedCamPos = glm::vec3(7.5f - (piece - 8), 0.8f, 0.5f);
-                }
-            }else if(piece==-1){
-                piece=15;
-                if(currPlayer==0) {
-                    fixedCamPos = glm::vec3(0.5f + (piece - 8), 0.8f, 7.5f);
-                }else{
-                    fixedCamPos = glm::vec3(7.5f - (piece - 8), 0.8f, 0.5f);
-                }
-            }
-            if(currPlayer==0 || (piece!=11 && piece!=12) ){
-                currText=piece;
-            }else{
-                if(piece==11){
-                    currText=12;
-                }else{
-                    currText=11;
-                }
-            }
-            if(currPlayer==0) {
+            Piece* currPiece = board.getPrevPiece(currPlayer);
+            currPiece->print();
+            fixedCamPos = getCameraPosition(currPiece);
+            if(currPlayer==Color::BLACK) {
                 CamAlpha = 0.0f;
             }else{
                 CamAlpha = glm::radians(-180.0f);
@@ -754,13 +711,13 @@ class MeshLoader : public BaseProject {
         static bool XKeyWasPressed = false;
         bool isXKeyPressed = (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS);
         if (isXKeyPressed && !XKeyWasPressed) {
-            if(currPlayer==0) {
-                CamPos = glm::vec3(4.0, 11.5, 19.0);
+            if(currPlayer==Color::WHITE) {
+                CamPos = glm::vec3(4.0, 3.0, 19.0);
             }else{
                 CamPos = glm::vec3(4.0, 11.5, -11.0);
             }
             isCameraFixed = false;
-            if(currPlayer==0) {
+            if(currPlayer==Color::WHITE) {
                 CamAlpha = 0.0f;
             }else{
                 CamAlpha = glm::radians(-180.0f);
@@ -775,15 +732,15 @@ class MeshLoader : public BaseProject {
         static bool ZKeyWasPressed = false;
         bool isZKeyPressed = (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS);
         if (isZKeyPressed && !ZKeyWasPressed) {
-            currPlayer=!currPlayer;
+            currPlayer = swapColor(currPlayer);
             piece=-1;
-            if(currPlayer==0) {
-                CamPos = glm::vec3(4.0, 11.5, 19.0);
+            if(currPlayer==Color::WHITE) {
+                CamPos = glm::vec3(4.0, 3.0, 19.0);
             }else{
                 CamPos = glm::vec3(4.0, 11.5, -11.0);
             }
             isCameraFixed = false;
-            if(currPlayer==0) {
+            if(currPlayer==Color::WHITE) {
                 CamAlpha = 0.0f;
             }else{
                 CamAlpha = glm::radians(-180.0f);
@@ -862,7 +819,6 @@ class MeshLoader : public BaseProject {
 
         globalDS.map(currentImage, &gubo, sizeof(gubo), 0);
 
-
         World = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
         uboCB.mvpMat = ViewPrj * World;
         DSCB.map(currentImage, &uboCB, sizeof(uboCB), 0);
@@ -938,10 +894,6 @@ class MeshLoader : public BaseProject {
         /*World = glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[0][0])), glm::vec3(10.0f, 10.0f, 10.0f));
         ubo1.mvpMat = ViewPrj * World;
         DS1.map(currentImage, &ubo1, sizeof(ubo1), 0);*/
-
-        int row;
-        int col=-1;
-        
 
         const std::vector<Piece*>& pieces = board.getAllPieces();
         for (const Piece* piece : pieces)
