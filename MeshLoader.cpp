@@ -89,14 +89,14 @@ class MeshLoader : public BaseProject {
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
 	// Models
-	Model<Vertex> MCB, M1, MC[8][8], MP[2][16];
+	Model<Vertex> MCB, MG, M1, MC[8][8], MP[2][16], MT[36];
 	// Descriptor sets
-	DescriptorSet DSCB, DS1, DSC[8][8], DSP[2][16], globalDS;
+	DescriptorSet DSCB, DSG, DS1, DSC[8][8], DSP[2][16], globalDS, DST[36];
 	// Textures
-	Texture T1, TB, TW;
+	Texture T1, TB, TW, TT;
 	
 	// C++ storage for uniform variables
-	UniformBlock uboCB, ubo1, uboC[8][8], uboP[2][16];
+	UniformBlock uboCB, uboG, ubo1, uboC[8][8], uboP[2][16], uboT[36];
 
     TextMaker txt;
 
@@ -105,11 +105,11 @@ class MeshLoader : public BaseProject {
     int currText = 16;
     Color currPlayer = Color::WHITE;  // 1==WHITE 0==BLACK
     int currScene = 0;
-    //glm::vec3 CamPos = glm::vec3(4.0, 3.0, 19.0);
+    //glm::vec3 CamPos = glm::vec3(4.0, 11.5, 19.0);
     //float CamAlpha = 0.0f;
-    glm::vec3 CamPos = glm::vec3(4.0, 3.0, -11.0);
+    glm::vec3 CamPos = glm::vec3(4.0, 11.5, -11.0);
     float CamAlpha = glm::radians(-180.0f);
-    float CamBeta = 0.0f;
+    float CamBeta = glm::radians(-35.0f);
 
     bool isCameraFixed = false;
     glm::vec3 fixedCamPos = glm::vec3(0.5f, 1.0f, 6.5f);
@@ -124,12 +124,13 @@ class MeshLoader : public BaseProject {
 		windowHeight = 600;
 		windowTitle = "Project-Chess";
     	windowResizable = GLFW_TRUE;
-		initialBackgroundColor = {0.0f, 1.0f, 1.0f, 1.0f};
+		//initialBackgroundColor = {0.0f, 1.0f, 1.0f, 1.0f};
+        initialBackgroundColor = {0.1f, 0.9f, 1.0f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 105;
-		texturesInPool = 105;
-		setsInPool = 105;
+		uniformBlocksInPool = 170;
+		texturesInPool = 170;
+		setsInPool = 170;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -252,42 +253,42 @@ class MeshLoader : public BaseProject {
         v[1][2] = 2.0f / 11.0f;
         //green
         u[0][3] = 5.05f / 11.0f;
-        v[0][3] = 6.1f / 11.0f;
+        v[0][3] = 4.1f / 11.0f;
         u[1][3]= 6.05f / 11.0f;
-        v[1][3] = 7.0f / 11.0f;
+        v[1][3] = 5.0f / 11.0f;
 
         // Creates a mesh with direct enumeration of vertices and indices
         MCB.vertices = {
                 //Top
-                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 1.0f, 0.0f}},
-                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 1.0f, 0.0f}},
-                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 1.0f, 0.0f}},
-                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 1.0f, 0.0f}},
+                {{-0.5f, -0.001f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 1.0f, 0.0f}},
+                {{-0.5f, -0.001f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 1.0f, 0.0f}},
+                {{8.5f, -0.001f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 1.0f, 0.0f}},
+                {{8.5f, -0.001f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 1.0f, 0.0f}},
                 // Bottom
                 {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, -1.0f, 0.0f}},
                 {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, -1.0f, 0.0f}},
                 {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, -1.0f, 0.0f}},
                 {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, -1.0f, 0.0f}},
                 //Left
-                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -0.001f, -0.5f}, {u[0][2], v[0][2]}, {-1.0f, 0.0f, 0.0f}},
                 {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {-1.0f, 0.0f, 0.0f}},
                 {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {-1.0f, 0.0f, 0.0f}},
                 {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}, {-1.0f, 0.0f, 0.0f}},
                 //Right
-                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -0.001f, 8.5f}, {u[1][2], v[1][2]}, {1.0f, 0.0f, 0.0f}},
                 {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {1.0f, 0.0f, 0.0f}},
                 {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {1.0f, 0.0f, 0.0f}},
-                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -0.001f, -0.5f}, {u[1][2], v[0][2]}, {1.0f, 0.0f, 0.0f}},
                 //Front
-                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                {{-0.5f, -0.001f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
                 {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
                 {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
-                {{8.5f, -0.0001f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                {{8.5f, -0.001f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
                 //Back
-                {{8.5f, -0.0001f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
+                {{8.5f, -0.001f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
                 {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
                 {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
-                {{-0.5f, -0.0001f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 0.0f, -1.0f}}
+                {{-0.5f, -0.001f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 0.0f, -1.0f}}
         };
         MCB.indices = {
                 // Front face
@@ -314,6 +315,19 @@ class MeshLoader : public BaseProject {
         M1.indices = { 0,1,2,0,2,3};
 
         M1.initMesh(this, &VD);*/
+
+        MG.vertices = {
+                //Top
+                {{-14.5f, -1.0001f, -14.5f}, {u[0][3], v[0][3]}, {0.0f, 1.0f, 0.0f}},
+                {{-14.5f, -1.0001f, 22.5f}, {u[0][3], v[1][3]}, {0.0f, 1.0f, 0.0f}},
+                {{22.5f, -1.0001f, 22.5f}, {u[1][3], v[1][3]}, {0.0f, 1.0f, 0.0f}},
+                {{22.5f, -1.0001f, -14.5f}, {u[1][3], v[0][3]}, {0.0f, 1.0f, 0.0f}}
+        };
+        MG.indices = {
+                // Top face
+                0,1,2,0,2,3
+        };
+        MG.initMesh(this, &VD);
 
         int c=1;
         for(int i=0; i<8; i++){
@@ -358,11 +372,16 @@ class MeshLoader : public BaseProject {
             }
         }
 
+        for(int i=0; i<36; i++){
+            MT[i].init(this,   &VD, "models/Pino.obj", OBJ);
+        }
+
 		// Create the textures
 		// The second parameter is the file name
 		T1.init(this, "textures/Textures.png");
         TB.init(this, "textures/ChessPiecesBlack.png");
         TW.init(this, "textures/ChessPiecesWhite.png");
+        TT.init(this, "textures/Trees.png");
 
         txt.init(this, &outText);
 
@@ -396,6 +415,11 @@ class MeshLoader : public BaseProject {
                 {1, TEXTURE, 0, &T1}
         });*/
 
+        DSG.init(this, &DSL, {
+                {0, UNIFORM, sizeof(UniformBlock), nullptr},
+                {1, TEXTURE, 0, &T1}
+        });
+
         for(int i=0; i<8; i++){
             for(int j=0; j<8; j++){
                 DSC[i][j].init(this, &DSL, {
@@ -426,6 +450,13 @@ class MeshLoader : public BaseProject {
             }
         }
 
+        for(int i=0; i<36; i++){
+            DST[i].init(this, &DSL, {
+                    {0, UNIFORM, sizeof(UniformBlock), nullptr},
+                    {1, TEXTURE, 0, &TT}
+            });
+        }
+
         txt.pipelinesAndDescriptorSetsInit();
 	}
 
@@ -439,6 +470,7 @@ class MeshLoader : public BaseProject {
 
         DSCB.cleanup();
         //DS1.cleanup();
+        DSG.cleanup();
         for(int i=0; i<8; i++){
             for(int j=0; j<8; j++){
                 DSC[i][j].cleanup();
@@ -450,6 +482,10 @@ class MeshLoader : public BaseProject {
             for(int j=0; j<16; j++){
                 DSP[i][j].cleanup();
             }
+        }
+
+        for(int i=0; i<36; i++){
+            DST[i].cleanup();
         }
 
         globalDS.cleanup();
@@ -466,11 +502,13 @@ class MeshLoader : public BaseProject {
 		T1.cleanup();
         TB.cleanup();
         TW.cleanup();
+        TT.cleanup();
 		
 		// Cleanup models
 
         MCB.cleanup();
         //M1.cleanup();
+        MG.cleanup();
         for(int i=0; i<8; i++){
             for(int j=0; j<8; j++){
                 MC[i][j].cleanup();
@@ -482,7 +520,11 @@ class MeshLoader : public BaseProject {
                 MP[i][j].cleanup();
             }
         }
-		
+
+        for(int i=0; i<36; i++){
+            MT[i].cleanup();
+        }
+
 		// Cleanup descriptor set layouts
 		DSL.cleanup();
         DSL_GLOBAL.cleanup();
@@ -527,6 +569,10 @@ class MeshLoader : public BaseProject {
         M1.bind(commandBuffer);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(M1.indices.size()), 1, 0, 0, 0);*/
+        DSG.bind(commandBuffer, P, 0, currentImage);
+        MG.bind(commandBuffer);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MG.indices.size()), 1, 0, 0, 0);
         for(int i=0; i<8; i++){
             for(int j=0; j<8; j++){
                 DSC[i][j].bind(commandBuffer, P, 0, currentImage);
@@ -547,6 +593,13 @@ class MeshLoader : public BaseProject {
                 vkCmdDrawIndexed(commandBuffer,
                                  static_cast<uint32_t>(MP[i][j].indices.size()), 1, 0, 0, 0);
             }
+        }
+
+        for(int i=0; i<36; i++){
+                DST[i].bind(commandBuffer, P, 0, currentImage);
+                MT[i].bind(commandBuffer);
+                vkCmdDrawIndexed(commandBuffer,
+                                 static_cast<uint32_t>(MT[i].indices.size()), 1, 0, 0, 0);
         }
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currText);
@@ -661,7 +714,7 @@ class MeshLoader : public BaseProject {
             if(currPlayer==Color::WHITE) {
                 CamPos = glm::vec3(4.0, 3.0, 19.0);
             }else{
-                CamPos = glm::vec3(4.0, 3.0, -11.0);
+                CamPos = glm::vec3(4.0, 11.5, -11.0);
             }
             isCameraFixed = false;
             if(currPlayer==Color::WHITE) {
@@ -669,7 +722,7 @@ class MeshLoader : public BaseProject {
             }else{
                 CamAlpha = glm::radians(-180.0f);
             }
-            CamBeta = 0.0f;
+            CamBeta = glm::radians(-35.0f);
             currText=16;
             RebuildPipeline();
         }
@@ -684,7 +737,7 @@ class MeshLoader : public BaseProject {
             if(currPlayer==Color::WHITE) {
                 CamPos = glm::vec3(4.0, 3.0, 19.0);
             }else{
-                CamPos = glm::vec3(4.0, 3.0, -11.0);
+                CamPos = glm::vec3(4.0, 11.5, -11.0);
             }
             isCameraFixed = false;
             if(currPlayer==Color::WHITE) {
@@ -692,7 +745,7 @@ class MeshLoader : public BaseProject {
             }else{
                 CamAlpha = glm::radians(-180.0f);
             }
-            CamBeta = 0.0f;
+            CamBeta = glm::radians(-35.0f);
             currText=16;
             RebuildPipeline();
         }
@@ -776,6 +829,10 @@ class MeshLoader : public BaseProject {
         // the second parameter is the pointer to the C++ data structure to transfer to the GPU
         // the third parameter is its size
         // the fourth parameter is the location inside the descriptor set of this uniform block
+
+        World = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
+        uboG.mvpMat = ViewPrj * World;
+        DSG.map(currentImage, &uboG, sizeof(uboG), 0);
         
         for(int i=0; i<8; i++){
             for(int j=0; j<8; j++){
@@ -783,6 +840,56 @@ class MeshLoader : public BaseProject {
                 uboC[i][j].mvpMat = ViewPrj * World;
                 DSC[i][j].map(currentImage, &uboC[i][j], sizeof(uboC[i][j]), 0);
             }
+        }
+
+        float positions[36][2] = {
+                {-2.5f, -2.5f},
+                {10.5f, -2.5f},
+                {10.5f, 10.5f},
+                {-2.5f, 10.5f},
+                {3.75f, -4.0f},
+                {12.0f, 3.75f},
+                {3.75f, 12.0f},
+                {-4.0f, 3.75f},
+                {-6.5f, -6.5f},
+                {14.5f, -6.5f},
+                {14.5f, 14.5f},
+                {-6.5f, 14.5f},
+                {0.625f, -6.5f},
+                {7.375f, -6.5f},
+                {14.5f, 0.625f},
+                {14.5f, 7.375f},
+                {0.625f, 14.5f},
+                {7.375f, 14.5f},
+                {-6.5f, 0.625f},
+                {-6.5f, 7.375f},
+                {-10.5f, -10.5f},
+                {18.5f, -10.5f},
+                {18.5f, 18.5f},
+                {-10.5f, 18.5f},
+                {-2.5f, -10.5f},
+                {3.75f, -10.5f},
+                {10.5f, -10.5f},
+                {18.5f, -2.5f},
+                {18.5f, 3.75f},
+                {18.5f, 10.5f},
+                {10.5f, 18.5f},
+                {3.75f, 18.5f},
+                {-2.5f, 18.5f},
+                {-10.5f, 10.5f},
+                {-10.5f, 3.75f},
+                {-10.5f, -2.5f}
+        };
+
+        float xt, zt;
+
+        for(int i=0; i<36; i++){
+            xt = positions[i][0];
+            zt = positions[i][1];
+            World = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(xt, -1.0f, zt)),
+                               glm::vec3(0.3f, 0.3f, 0.3f));
+            uboT[i].mvpMat = ViewPrj * World;
+            DST[i].map(currentImage, &uboT[i], sizeof(uboT[i]), 0);
         }
         /*World = glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[0][0])), glm::vec3(10.0f, 10.0f, 10.0f));
         ubo1.mvpMat = ViewPrj * World;
