@@ -654,6 +654,7 @@ class MeshLoader : public BaseProject {
         bool isMKeyPressed = (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS);
         if (isMKeyPressed && !MKeyWasPressed) {
             isCameraFixed = true;
+            resetColor();
             nextPiece(board);
             currText = (int) game.getCurrPiece()->getType();
             RebuildPipeline();
@@ -664,6 +665,7 @@ class MeshLoader : public BaseProject {
         bool isNKeyPressed = (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS);
         if (isNKeyPressed && !NKeyWasPressed) {
             isCameraFixed = true;
+            resetColor();
             previousPiece(board);
             currText = (int) game.getCurrPiece()->getType();
             RebuildPipeline();
