@@ -87,16 +87,10 @@ void main() {
     RendEqSol += BRDF(Albedo, Norm, EyeDir, LD) * LC;
 
     // Indirect illumination simulation
-    //const vec3 cxp = vec3(1.0, 0.5, 0.5) * 0.9; // Increase ambient intensity
-    //const vec3 cxn = vec3(0.9, 0.6, 0.4) * 0.9;
-    //const vec3 cyp = vec3(0.3, 1.0, 1.0) * 0.9;
-    //const vec3 cyn = vec3(0.5, 0.5, 0.5) * 0.9;
-    //const vec3 czp = vec3(0.8, 0.2, 0.4) * 0.9;
-    //const vec3 czn = vec3(0.3, 0.6, 0.7) * 0.9;
 
-    const vec3 cxp = vec3(1.0, 0.8, 0.8) * 0.8; // Luce diurna più intensa
+    const vec3 cxp = vec3(1.0, 0.8, 0.8) * 0.8;
     const vec3 cxn = vec3(0.9, 0.7, 0.5) * 0.8;
-    const vec3 cyp = vec3(0.5, 1.0, 1.0) * 0.8; // Aumentato per luce solare diretta
+    const vec3 cyp = vec3(0.5, 1.0, 1.0) * 0.8; 
     const vec3 cyn = vec3(0.7, 0.7, 0.7) * 0.8;
     const vec3 czp = vec3(0.9, 0.4, 0.5) * 0.8;
     const vec3 czn = vec3(0.5, 0.7, 0.8) * 0.8;
