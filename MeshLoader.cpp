@@ -312,7 +312,7 @@ class MeshLoader : public BaseProject {
                     }
                 }
                 UniformColor color{};
-                color.uvColor = {colorMat[4][0], colorMat[4][1]};
+                color.uvColor = {colorMat[4][0], colorMat[4][1]}; // blue
                 color.trigger = 0.0f;
                 colorB[i][j] = color;
             }
@@ -746,6 +746,8 @@ class MeshLoader : public BaseProject {
                     std::cout<<"Checkmate"<<std::endl;
                 }
                 nextPiece(board);
+                currText = (int) game.getCurrPiece()->getType();
+                RebuildPipeline();
             }
             else{
                 std::cout<<"Move is illegal"<<std::endl;
