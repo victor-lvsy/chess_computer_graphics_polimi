@@ -6,6 +6,9 @@ class Game
 {
 private:
     Board board;
+    Color currPlayer;
+    Piece* currPiece;
+    std::pair<int, int> nextMoove;
 
 public:
     // Constructor
@@ -19,4 +22,15 @@ public:
 
     // Get a reference to the board
     Board &getBoard();
+
+    Color isPlaying() const;
+
+    void swapColor();
+
+    std::pair<int, int> getNextMoove();
+
+    void setNextMoove(std::pair<int, int> xy);
+
+    Piece* getCurrPiece();
+    void setCurrPiece(Piece* piece);
 };
