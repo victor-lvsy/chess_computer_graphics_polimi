@@ -1,10 +1,11 @@
 
 
-float colorMat[4][2] = {
+float colorMat[5][2] = {
     {9.1f/11.0f, 1.0f/11.0f}, //black
     {9.1f / 11.0f, 9.0f / 11.0f}, //white
     {8.1f / 11.0f, 1.0f / 11.0f}, //brown
-    {5.05f / 11.0f, 4.1f / 11.0f} // green
+    {5.05f / 11.0f, 4.1f / 11.0f}, // green
+    {3.1f / 11.0f, 5.05f / 11.0f} // blue
 };
 
 float positions[36][2] = {

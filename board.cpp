@@ -44,11 +44,19 @@ Piece* Board::getNextPiece(Color color) const
         if (whitePieces.empty()) return nullptr;
         Piece* piece = whitePieces[whiteIndex];
         whiteIndex = (whiteIndex + 1) % whitePieces.size();
+        while(!piece->isAlive()){
+            piece = whitePieces[whiteIndex];
+            whiteIndex = (whiteIndex + 1) % whitePieces.size();
+        }
         return piece;
     } else {
         if (blackPieces.empty()) return nullptr;
         Piece* piece = blackPieces[blackIndex];
         blackIndex = (blackIndex + 1) % blackPieces.size();
+        while(!piece->isAlive()){
+            piece = blackPieces[blackIndex];
+            blackIndex = (whiteIndex + 1) % blackPieces.size();
+        }
         return piece;
     }
 }
@@ -59,11 +67,19 @@ Piece* Board::getPrevPiece(Color color) const
         if (whitePieces.empty()) return nullptr;
         Piece* piece = whitePieces[whiteIndex];
         whiteIndex = (whiteIndex - 1 > 0) ? whiteIndex - 1 : whitePieces.size() - 1;
+        while(!piece->isAlive()){
+            piece = whitePieces[whiteIndex];
+            whiteIndex = (whiteIndex - 1 > 0) ? whiteIndex - 1 : whitePieces.size() - 1;
+        }
         return piece;
     } else {
         if (blackPieces.empty()) return nullptr;
         Piece* piece = blackPieces[blackIndex];
         blackIndex = (blackIndex - 1 > 0) ? blackIndex - 1 : blackPieces.size() - 1;
+        while(!piece->isAlive()){
+            piece = blackPieces[blackIndex];
+            blackIndex = (blackIndex - 1 > 0) ? blackIndex - 1 : blackPieces.size() - 1;
+        }
         return piece;
     }
 }

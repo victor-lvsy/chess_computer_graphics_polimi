@@ -10,24 +10,14 @@
 #include <memory> // For using smart pointers
 
 std::vector<SingleText> outText = {
-        {1, {"Pawn 1", "", "", ""}, 0, 0},
-        {1, {"Pawn 2", "", "", ""}, 0, 0},
-        {1, {"Pawn 3", "", "", ""}, 0, 0},
-        {1, {"Pawn 4", "", "", ""}, 0, 0},
-        {1, {"Pawn 5", "", "", ""}, 0, 0},
-        {1, {"Pawn 6", "", "", ""}, 0, 0},
-        {1, {"Pawn 7", "", "", ""}, 0, 0},
-        {1, {"Pawn 8", "", "", ""}, 0, 0},
-        {1, {"Rook L", "", "", ""}, 0, 0},
-        {1, {"Horse L", "", "", ""}, 0, 0},
-        {1, {"Knight L", "", "", ""}, 0, 0},
+        {1, {"Pawn", "", "", ""}, 0, 0},
+        {1, {"Knight", "", "", ""}, 0, 0},
+        {1, {"Bishop", "", "", ""}, 0, 0},
+        {1, {"Rook", "", "", ""}, 0, 0},
         {1, {"Queen", "", "", ""}, 0, 0},
         {1, {"King", "", "", ""}, 0, 0},
-        {1, {"Knight R", "", "", ""}, 0, 0},
-        {1, {"Horse R", "", "", ""}, 0, 0},
-        {1, {"Rook R", "", "", ""}, 0, 0},
-        {1, {"Project Chess", "", "", ""}, 0, 0}
-
+        {1, {"Demo Mode Chess", "", "", ""}, 0, 0}
+        
 };
 
 // The uniform buffer objects data structures
@@ -107,7 +97,7 @@ class MeshLoader : public BaseProject {
 
 	// Other application parameters
     int piece=-1;
-    int currText = 16;
+    int currText = 6;
     int currScene = 0;
     //glm::vec3 CamPos = glm::vec3(4.0, 11.5, 19.0);
     //float CamAlpha = 0.0f;
@@ -322,7 +312,7 @@ class MeshLoader : public BaseProject {
                     }
                 }
                 UniformColor color{};
-                color.uvColor = glm::vec2((5.05f / 11.0f), (4.1f / 11.0f));
+                color.uvColor = {colorMat[4][0], colorMat[4][1]};
                 color.trigger = 0.0f;
                 colorB[i][j] = color;
             }
@@ -665,6 +655,7 @@ class MeshLoader : public BaseProject {
         if (isMKeyPressed && !MKeyWasPressed) {
             isCameraFixed = true;
             nextPiece(board);
+            currText = (int) game.getCurrPiece()->getType();
             RebuildPipeline();
         }
         MKeyWasPressed = isMKeyPressed;
@@ -674,29 +665,10 @@ class MeshLoader : public BaseProject {
         if (isNKeyPressed && !NKeyWasPressed) {
             isCameraFixed = true;
             previousPiece(board);
+            currText = (int) game.getCurrPiece()->getType();
             RebuildPipeline();
         }
         NKeyWasPressed = isNKeyPressed;
-
-        static bool XKeyWasPressed = false;
-        bool isXKeyPressed = (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS);
-        if (isXKeyPressed && !XKeyWasPressed) {
-            if(game.isPlaying()==Color::WHITE) {
-                CamPos = glm::vec3(4.0, 3.0, 19.0);
-            }else{
-                CamPos = glm::vec3(4.0, 11.5, -11.0);
-            }
-            isCameraFixed = false;
-            if(game.isPlaying()==Color::WHITE) {
-                CamAlpha = 0.0f;
-            }else{
-                CamAlpha = glm::radians(-180.0f);
-            }
-            CamBeta = glm::radians(-35.0f);
-            currText=16;
-            RebuildPipeline();
-        }
-        XKeyWasPressed = isXKeyPressed;
 
         static bool WKeyWasPressed = false;
         bool isWKeyPressed = (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS);
@@ -775,21 +747,19 @@ class MeshLoader : public BaseProject {
         static bool ZKeyWasPressed = false;
         bool isZKeyPressed = (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS);
         if (isZKeyPressed && !ZKeyWasPressed) {
-            game.swapColor();
-            piece=-1;
-            if(game.isPlaying()==Color::WHITE) {
-                CamPos = glm::vec3(4.0, 3.0, 19.0);
+            if(game.isPlaying()==Color::BLACK) {
+                CamPos = glm::vec3(4.0, 11.5, 19.0);
             }else{
                 CamPos = glm::vec3(4.0, 11.5, -11.0);
             }
             isCameraFixed = false;
-            if(game.isPlaying()==Color::WHITE) {
+            if(game.isPlaying()==Color::BLACK) {
                 CamAlpha = 0.0f;
             }else{
                 CamAlpha = glm::radians(-180.0f);
             }
             CamBeta = glm::radians(-35.0f);
-            currText=16;
+            currText=6;
             RebuildPipeline();
         }
         ZKeyWasPressed = isZKeyPressed;
