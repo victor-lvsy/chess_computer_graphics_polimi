@@ -674,12 +674,14 @@ class MeshLoader : public BaseProject {
         bool isWKeyPressed = (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS);
         if (isWKeyPressed && !WKeyWasPressed) {
             std::cout<<"Z"<<std::endl;
+            if(currText != 6){
             int x = game.getNextMoove().first;
             int y = game.getNextMoove().second;
             int increment = (game.isPlaying() == Color::WHITE) ? 1 : -1;
             game.setNextMoove({x + increment, y});
             resetColor();
             colorB[x + increment][y].trigger = 1.0f;
+            }
         }
         WKeyWasPressed = isWKeyPressed;
 
@@ -687,12 +689,14 @@ class MeshLoader : public BaseProject {
         bool isAKeyPressed = (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS);
         if (isAKeyPressed && !AKeyWasPressed) {
             std::cout<<"Q"<<std::endl;
+            if(currText != 6){
             int x = game.getNextMoove().first;
             int y = game.getNextMoove().second;
             int increment = (game.isPlaying() == Color::WHITE) ? 1 : -1;
             game.setNextMoove({x, y + increment});
             resetColor();
             colorB[x ][y + increment].trigger = 1.0f;
+            }
         }
         AKeyWasPressed = isAKeyPressed;
 
@@ -700,12 +704,14 @@ class MeshLoader : public BaseProject {
         bool isSKeyPressed = (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS);
         if (isSKeyPressed && !SKeyWasPressed) {
             std::cout<<"S"<<std::endl;
+            if(currText != 6){
             int x = game.getNextMoove().first;
             int y = game.getNextMoove().second;
             int increment = (game.isPlaying() == Color::WHITE) ? 1 : -1;
             game.setNextMoove({x - increment, y});
             resetColor();
             colorB[x - increment][y].trigger = 1.0f;
+            }
         }
         SKeyWasPressed = isSKeyPressed;
 
@@ -713,12 +719,14 @@ class MeshLoader : public BaseProject {
         bool isDKeyPressed = (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS);
         if (isDKeyPressed && !DKeyWasPressed) {
             std::cout<<"D"<<std::endl;
+            if(currText != 6){
             int x = game.getNextMoove().first;
             int y = game.getNextMoove().second;
             int increment = (game.isPlaying() == Color::WHITE) ? 1 : -1;
             game.setNextMoove({x, y - increment});
             resetColor();
             colorB[x ][y - increment].trigger = 1.0f;
+            }
         }
         DKeyWasPressed = isDKeyPressed;
 
@@ -747,6 +755,7 @@ class MeshLoader : public BaseProject {
         static bool ZKeyWasPressed = false;
         bool isZKeyPressed = (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS);
         if (isZKeyPressed && !ZKeyWasPressed) {
+            resetColor();
             if(game.isPlaying()==Color::BLACK) {
                 CamPos = glm::vec3(4.0, 11.5, 19.0);
             }else{
