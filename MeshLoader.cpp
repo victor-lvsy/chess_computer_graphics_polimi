@@ -4,6 +4,7 @@
 #include "game.h"
 #include "pieces.h"
 #include "TextMaker.hpp"
+#include "const.hpp"
 
 
 #include <memory> // For using smart pointers
@@ -42,6 +43,11 @@ struct UniformBlock {
 	alignas(16) glm::mat4 mvpMat;
 };
 
+struct UniformColor {
+    alignas(4) float trigger;
+	alignas(8) glm::vec2 uvColor;
+};
+
 struct GlobalUniformBufferObject {
     struct {
         alignas(16) glm::vec3 v;
@@ -63,9 +69,6 @@ struct Vertex {
 	glm::vec2 UV;
     glm::vec3 normal;
 };
-
-
-
 
 
 // MAIN ! 
@@ -98,12 +101,13 @@ class MeshLoader : public BaseProject {
 	// C++ storage for uniform variables
 	UniformBlock uboCB, uboG, ubo1, uboC[8][8], uboP[2][16], uboT[36];
 
+    UniformColor colorB[8][8];
+
     TextMaker txt;
 
 	// Other application parameters
     int piece=-1;
     int currText = 16;
-    Color currPlayer = Color::WHITE;  // 1==WHITE 0==BLACK
     int currScene = 0;
     //glm::vec3 CamPos = glm::vec3(4.0, 11.5, 19.0);
     //float CamAlpha = 0.0f;
@@ -173,7 +177,8 @@ class MeshLoader : public BaseProject {
 					// third  element : the pipeline stage where it will be used
 					//                  using the corresponding Vulkan constant
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 				});
 
         // Global descriptor layout
@@ -234,61 +239,38 @@ class MeshLoader : public BaseProject {
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
 
-        float u[2][4];
-        float v[2][4];
-        //black
-        u[0][0] = 9.1f/11.0f;
-        v[0][0] = 1.0f/11.0f;
-        u[1][0]= 10.1f / 11.0f;
-        v[1][0] = 2.0f / 11.0f;
-        //white
-        u[0][1] = 9.1f / 11.0f;
-        v[0][1] = 9.0f / 11.0f;
-        u[1][1]= 10.1f / 11.0f;
-        v[1][1] = 10.0f / 11.0f;
-        //brown
-        u[0][2] = 8.1f / 11.0f;
-        v[0][2] = 1.0f / 11.0f;
-        u[1][2]= 9.1f / 11.0f;
-        v[1][2] = 2.0f / 11.0f;
-        //green
-        u[0][3] = 5.05f / 11.0f;
-        v[0][3] = 4.1f / 11.0f;
-        u[1][3]= 6.05f / 11.0f;
-        v[1][3] = 5.0f / 11.0f;
-
         // Creates a mesh with direct enumeration of vertices and indices
         MCB.vertices = {
                 //Top
-                {{-0.5f, -0.001f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 1.0f, 0.0f}},
-                {{-0.5f, -0.001f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 1.0f, 0.0f}},
-                {{8.5f, -0.001f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 1.0f, 0.0f}},
-                {{8.5f, -0.001f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 1.0f, 0.0f}},
+                {{-0.5f, -0.001f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 1.0f, 0.0f}},
+                {{-0.5f, -0.001f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 1.0f, 0.0f}},
+                {{8.5f, -0.001f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 1.0f, 0.0f}},
+                {{8.5f, -0.001f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 1.0f, 0.0f}},
                 // Bottom
-                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, -1.0f, 0.0f}},
-                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, -1.0f, 0.0f}},
-                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, -1.0f, 0.0f}},
-                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, -1.0f, 0.0f}},
+                {{-0.5f, -1.0f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, -1.0f, 0.0f}},
+                {{-0.5f, -1.0f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, -1.0f, 0.0f}},
+                {{8.5f, -1.0f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, -1.0f, 0.0f}},
+                {{8.5f, -1.0f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, -1.0f, 0.0f}},
                 //Left
-                {{-0.5f, -0.001f, -0.5f}, {u[0][2], v[0][2]}, {-1.0f, 0.0f, 0.0f}},
-                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {-1.0f, 0.0f, 0.0f}},
-                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {-1.0f, 0.0f, 0.0f}},
-                {{-0.5f, -0.0001f, 8.5f}, {u[0][2], v[1][2]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -0.001f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -1.0f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -1.0f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {-1.0f, 0.0f, 0.0f}},
+                {{-0.5f, -0.0001f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {-1.0f, 0.0f, 0.0f}},
                 //Right
-                {{8.5f, -0.001f, 8.5f}, {u[1][2], v[1][2]}, {1.0f, 0.0f, 0.0f}},
-                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {1.0f, 0.0f, 0.0f}},
-                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {1.0f, 0.0f, 0.0f}},
-                {{8.5f, -0.001f, -0.5f}, {u[1][2], v[0][2]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -0.001f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -1.0f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -1.0f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {1.0f, 0.0f, 0.0f}},
+                {{8.5f, -0.001f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {1.0f, 0.0f, 0.0f}},
                 //Front
-                {{-0.5f, -0.001f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
-                {{-0.5f, -1.0f, 8.5f}, {u[0][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
-                {{8.5f, -1.0f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
-                {{8.5f, -0.001f, 8.5f}, {u[1][2], v[1][2]}, {0.0f, 0.0f, 1.0f}},
+                {{-0.5f, -0.001f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 0.0f, 1.0f}},
+                {{-0.5f, -1.0f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 0.0f, 1.0f}},
+                {{8.5f, -1.0f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 0.0f, 1.0f}},
+                {{8.5f, -0.001f, 8.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 0.0f, 1.0f}},
                 //Back
-                {{8.5f, -0.001f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
-                {{8.5f, -1.0f, -0.5f}, {u[1][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
-                {{-0.5f, -1.0f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 0.0f, -1.0f}},
-                {{-0.5f, -0.001f, -0.5f}, {u[0][2], v[0][2]}, {0.0f, 0.0f, -1.0f}}
+                {{8.5f, -0.001f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 0.0f, -1.0f}},
+                {{8.5f, -1.0f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 0.0f, -1.0f}},
+                {{-0.5f, -1.0f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 0.0f, -1.0f}},
+                {{-0.5f, -0.001f, -0.5f}, {colorMat[2][0], colorMat[2][1]}, {0.0f, 0.0f, -1.0f}}
         };
         MCB.indices = {
                 // Front face
@@ -306,22 +288,12 @@ class MeshLoader : public BaseProject {
         };
         MCB.initMesh(this, &VD);
 
-        /*M1.vertices = {
-                {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-                {{0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-                {{1.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-                {{1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-        };
-        M1.indices = { 0,1,2,0,2,3};
-
-        M1.initMesh(this, &VD);*/
-
         MG.vertices = {
                 //Top
-                {{-14.5f, -1.0001f, -14.5f}, {u[0][3], v[0][3]}, {0.0f, 1.0f, 0.0f}},
-                {{-14.5f, -1.0001f, 22.5f}, {u[0][3], v[1][3]}, {0.0f, 1.0f, 0.0f}},
-                {{22.5f, -1.0001f, 22.5f}, {u[1][3], v[1][3]}, {0.0f, 1.0f, 0.0f}},
-                {{22.5f, -1.0001f, -14.5f}, {u[1][3], v[0][3]}, {0.0f, 1.0f, 0.0f}}
+                {{-14.5f, -1.0001f, -14.5f}, {colorMat[3][0], colorMat[3][1]}, {0.0f, 1.0f, 0.0f}},
+                {{-14.5f, -1.0001f, 22.5f}, {colorMat[3][0], colorMat[3][1]}, {0.0f, 1.0f, 0.0f}},
+                {{22.5f, -1.0001f, 22.5f}, {colorMat[3][0], colorMat[3][1]}, {0.0f, 1.0f, 0.0f}},
+                {{22.5f, -1.0001f, -14.5f}, {colorMat[3][0], colorMat[3][1]}, {0.0f, 1.0f, 0.0f}}
         };
         MG.indices = {
                 // Top face
@@ -334,10 +306,10 @@ class MeshLoader : public BaseProject {
             for(int j=0; j<8; j++){
 
                 MC[i][j].vertices = {
-                        {{0.0f+(float)j, 0.0f, 0.0f+(float)i}, {u[0][c], v[0][c]}, {0.0f, 1.0f, 0.0f}},
-                        {{0.0f+(float)j, 0.0f, 1.0f+(float)i}, {u[0][c], v[1][c]}, {0.0f, 1.0f, 0.0f}},
-                        {{1.0f+(float)j, 0.0f, 1.0f+(float)i}, {u[1][c], v[1][c]}, {0.0f, 1.0f, 0.0f}},
-                        {{1.0f+(float)j, 0.0f, 0.0f+(float)i}, {u[1][c], v[0][c]}, {0.0f, 1.0f, 0.0f}},
+                        {{0.0f+(float)j, 0.0f, 0.0f+(float)i}, {colorMat[c][0], colorMat[c][1]}, {0.0f, 1.0f, 0.0f}},
+                        {{0.0f+(float)j, 0.0f, 1.0f+(float)i}, {colorMat[c][0], colorMat[c][1]}, {0.0f, 1.0f, 0.0f}},
+                        {{1.0f+(float)j, 0.0f, 1.0f+(float)i}, {colorMat[c][0], colorMat[c][1]}, {0.0f, 1.0f, 0.0f}},
+                        {{1.0f+(float)j, 0.0f, 0.0f+(float)i}, {colorMat[c][0], colorMat[c][1]}, {0.0f, 1.0f, 0.0f}},
                 };
                 MC[i][j].indices = { 0,1,2,0,2,3};
 
@@ -349,10 +321,13 @@ class MeshLoader : public BaseProject {
                         c = 1;
                     }
                 }
+                UniformColor color{};
+                color.uvColor = glm::vec2((5.05f / 11.0f), (4.1f / 11.0f));
+                color.trigger = 0.0f;
+                colorB[i][j] = color;
             }
         }
 
-        //M1.init(this,   &VD, "models/Pawn.obj", OBJ);
 
         for(int i=0; i<2; i++){
             for(int j=0; j<16; j++){
@@ -408,43 +383,40 @@ class MeshLoader : public BaseProject {
 
         DSCB.init(this, &DSL, {
                 {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &T1}
+                {1, TEXTURE, 0, &T1},
+                {2, UNIFORM, sizeof(UniformColor), nullptr}
         });
-        /*DS1.init(this, &DSL, {
-                {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &T1}
-        });*/
 
         DSG.init(this, &DSL, {
                 {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &T1}
+                {1, TEXTURE, 0, &T1},
+                {2, UNIFORM, sizeof(UniformColor), nullptr}
         });
 
         for(int i=0; i<8; i++){
             for(int j=0; j<8; j++){
                 DSC[i][j].init(this, &DSL, {
                         {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                        {1, TEXTURE, 0, &T1}
+                        {1, TEXTURE, 0, &T1},
+                        {2, UNIFORM, sizeof(UniformColor), nullptr}
                 });
             }
         }
 
-        /*DS1.init(this, &DSL, {
-                {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                {1, TEXTURE, 0, &TB}
-        });*/
 
         for(int i=0; i<2; i++){
             for(int j=0; j<16; j++){
                 if(i==0){
                     DSP[i][j].init(this, &DSL, {
                             {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                            {1, TEXTURE, 0, &TB}
+                            {1, TEXTURE, 0, &TB},
+                            {2, UNIFORM, sizeof(UniformColor), nullptr}
                     });
                 }else{
                     DSP[i][j].init(this, &DSL, {
                             {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                            {1, TEXTURE, 0, &TW}
+                            {1, TEXTURE, 0, &TW},
+                            {2, UNIFORM, sizeof(UniformColor), nullptr}
                     });
                 }
             }
@@ -453,7 +425,8 @@ class MeshLoader : public BaseProject {
         for(int i=0; i<36; i++){
             DST[i].init(this, &DSL, {
                     {0, UNIFORM, sizeof(UniformBlock), nullptr},
-                    {1, TEXTURE, 0, &TT}
+                    {1, TEXTURE, 0, &TT},
+                    {2, UNIFORM, sizeof(UniformColor), nullptr}
             });
         }
 
@@ -581,10 +554,7 @@ class MeshLoader : public BaseProject {
                                  static_cast<uint32_t>(MC[i][j].indices.size()), 1, 0, 0, 0);
             }
         }
-        /*DS1.bind(commandBuffer, P, 0, currentImage);
-        M1.bind(commandBuffer);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(M1.indices.size()), 1, 0, 0, 0);*/
+
 
         for(int i=0; i<2; i++){
             for(int j=0; j<16; j++){
@@ -620,15 +590,44 @@ class MeshLoader : public BaseProject {
         return center;
     }
 
-    // Function to swap colors
-    Color swapColor(Color color) {
-        return (color == Color::WHITE) ? Color::BLACK : Color::WHITE;
-    }
-
     // Get camera pos given a piece
     glm::vec3 getCameraPosition(Piece* piece) {
         float y = (piece->getType() != PieceType::PAWN) ? 0.8f : 1.0f;
         return glm::vec3(static_cast< float >(piece->getPosition().second) +0.5f, y, static_cast< float >(piece->getPosition().first) +0.5f);
+    }
+
+    void resetColor(){
+        for(int i=0; i<8; i++){
+            for(int j=0; j<8; j++){
+                colorB[i][j].trigger = 0.0f;
+            }
+        }
+    }
+
+    void nextPiece(Board &board){
+        game.setCurrPiece(board.getNextPiece(game.isPlaying()));
+        game.getCurrPiece()->print();
+        game.setNextMoove(game.getCurrPiece()->getPosition());
+        fixedCamPos = getCameraPosition(game.getCurrPiece());
+        if(game.isPlaying()==Color::BLACK) {
+            CamAlpha = 0.0f;
+        }else{
+            CamAlpha = glm::radians(-180.0f);
+        }
+        CamBeta = 0.0f;
+    }
+
+    void previousPiece(Board & board){
+        game.setCurrPiece(board.getPrevPiece(game.isPlaying()));
+            game.getCurrPiece()->print();
+            game.setNextMoove(game.getCurrPiece()->getPosition());
+            fixedCamPos = getCameraPosition(game.getCurrPiece());
+            if(game.isPlaying()==Color::BLACK) {
+                CamAlpha = 0.0f;
+            }else{
+                CamAlpha = glm::radians(-180.0f);
+            }
+            CamBeta = 0.0f;
     }
 
 	// Here is where you update the uniforms.
@@ -655,19 +654,6 @@ class MeshLoader : public BaseProject {
 		bool isPKeyPressed = (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS);
 
 		if (isPKeyPressed && !PKeyWasPressed) {
-			if (board.isLegalMove(board.getPiece(1, 1), 3, 1)){
-                board.movePiece(board.getPiece(1, 1), 3, 1);
-            }
-            if (board.isLegalMove(board.getPiece(3, 1), 4, 1)){
-                board.movePiece(board.getPiece(3, 1), 4, 1);
-            }
-            if (board.isLegalMove(board.getPiece(4, 1), 5, 1)){
-                board.movePiece(board.getPiece(4, 1), 5, 1);
-            }
-            if (board.isLegalMove(board.getPiece(5, 1), 6, 2)){
-                board.movePiece(board.getPiece(5, 1), 6, 2);
-            }
-            board.movePiece(board.getPiece(6, 2), 5, 1);
             board.printAllPieces(Color::BLACK);
             board.printAllPieces(Color::WHITE);
 		}
@@ -678,15 +664,7 @@ class MeshLoader : public BaseProject {
         bool isMKeyPressed = (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS);
         if (isMKeyPressed && !MKeyWasPressed) {
             isCameraFixed = true;
-            Piece* currPiece = board.getNextPiece(currPlayer);
-            currPiece->print();
-            fixedCamPos = getCameraPosition(currPiece);
-            if(currPlayer==Color::BLACK) {
-                CamAlpha = 0.0f;
-            }else{
-                CamAlpha = glm::radians(-180.0f);
-            }
-            CamBeta = 0.0f;
+            nextPiece(board);
             RebuildPipeline();
         }
         MKeyWasPressed = isMKeyPressed;
@@ -695,15 +673,7 @@ class MeshLoader : public BaseProject {
         bool isNKeyPressed = (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS);
         if (isNKeyPressed && !NKeyWasPressed) {
             isCameraFixed = true;
-            Piece* currPiece = board.getPrevPiece(currPlayer);
-            currPiece->print();
-            fixedCamPos = getCameraPosition(currPiece);
-            if(currPlayer==Color::BLACK) {
-                CamAlpha = 0.0f;
-            }else{
-                CamAlpha = glm::radians(-180.0f);
-            }
-            CamBeta = 0.0f;
+            previousPiece(board);
             RebuildPipeline();
         }
         NKeyWasPressed = isNKeyPressed;
@@ -711,13 +681,13 @@ class MeshLoader : public BaseProject {
         static bool XKeyWasPressed = false;
         bool isXKeyPressed = (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS);
         if (isXKeyPressed && !XKeyWasPressed) {
-            if(currPlayer==Color::WHITE) {
+            if(game.isPlaying()==Color::WHITE) {
                 CamPos = glm::vec3(4.0, 3.0, 19.0);
             }else{
                 CamPos = glm::vec3(4.0, 11.5, -11.0);
             }
             isCameraFixed = false;
-            if(currPlayer==Color::WHITE) {
+            if(game.isPlaying()==Color::WHITE) {
                 CamAlpha = 0.0f;
             }else{
                 CamAlpha = glm::radians(-180.0f);
@@ -728,19 +698,92 @@ class MeshLoader : public BaseProject {
         }
         XKeyWasPressed = isXKeyPressed;
 
+        static bool WKeyWasPressed = false;
+        bool isWKeyPressed = (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS);
+        if (isWKeyPressed && !WKeyWasPressed) {
+            std::cout<<"Z"<<std::endl;
+            int x = game.getNextMoove().first;
+            int y = game.getNextMoove().second;
+            int increment = (game.isPlaying() == Color::WHITE) ? 1 : -1;
+            game.setNextMoove({x + increment, y});
+            resetColor();
+            colorB[x + increment][y].trigger = 1.0f;
+        }
+        WKeyWasPressed = isWKeyPressed;
+
+        static bool AKeyWasPressed = false;
+        bool isAKeyPressed = (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS);
+        if (isAKeyPressed && !AKeyWasPressed) {
+            std::cout<<"Q"<<std::endl;
+            int x = game.getNextMoove().first;
+            int y = game.getNextMoove().second;
+            int increment = (game.isPlaying() == Color::WHITE) ? 1 : -1;
+            game.setNextMoove({x, y + increment});
+            resetColor();
+            colorB[x ][y + increment].trigger = 1.0f;
+        }
+        AKeyWasPressed = isAKeyPressed;
+
+        static bool SKeyWasPressed = false;
+        bool isSKeyPressed = (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS);
+        if (isSKeyPressed && !SKeyWasPressed) {
+            std::cout<<"S"<<std::endl;
+            int x = game.getNextMoove().first;
+            int y = game.getNextMoove().second;
+            int increment = (game.isPlaying() == Color::WHITE) ? 1 : -1;
+            game.setNextMoove({x - increment, y});
+            resetColor();
+            colorB[x - increment][y].trigger = 1.0f;
+        }
+        SKeyWasPressed = isSKeyPressed;
+
+        static bool DKeyWasPressed = false;
+        bool isDKeyPressed = (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS);
+        if (isDKeyPressed && !DKeyWasPressed) {
+            std::cout<<"D"<<std::endl;
+            int x = game.getNextMoove().first;
+            int y = game.getNextMoove().second;
+            int increment = (game.isPlaying() == Color::WHITE) ? 1 : -1;
+            game.setNextMoove({x, y - increment});
+            resetColor();
+            colorB[x ][y - increment].trigger = 1.0f;
+        }
+        DKeyWasPressed = isDKeyPressed;
+
+        static bool ENTERKeyWasPressed = false;
+        bool isENTERKeyPressed = (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS);
+        if (isENTERKeyPressed && !ENTERKeyWasPressed) {
+            std::cout<<"ENTER"<<std::endl;
+            int x = game.getNextMoove().first;
+            int y = game.getNextMoove().second;
+            if (board.isLegalMove(game.getCurrPiece(), x, y)){
+                board.movePiece(game.getCurrPiece(), x, y);
+                resetColor();
+                game.swapColor();
+                if (board.isCheckmate(game.isPlaying())){
+                    std::cout<<"Checkmate"<<std::endl;
+                }
+                nextPiece(board);
+            }
+            else{
+                std::cout<<"Move is illegal"<<std::endl;
+            }
+        }
+        ENTERKeyWasPressed = isENTERKeyPressed;
+
         //Z key have to be removed, only for showing purpose
         static bool ZKeyWasPressed = false;
         bool isZKeyPressed = (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS);
         if (isZKeyPressed && !ZKeyWasPressed) {
-            currPlayer = swapColor(currPlayer);
+            game.swapColor();
             piece=-1;
-            if(currPlayer==Color::WHITE) {
+            if(game.isPlaying()==Color::WHITE) {
                 CamPos = glm::vec3(4.0, 3.0, 19.0);
             }else{
                 CamPos = glm::vec3(4.0, 11.5, -11.0);
             }
             isCameraFixed = false;
-            if(currPlayer==Color::WHITE) {
+            if(game.isPlaying()==Color::WHITE) {
                 CamAlpha = 0.0f;
             }else{
                 CamAlpha = glm::radians(-180.0f);
@@ -771,13 +814,7 @@ class MeshLoader : public BaseProject {
 		// Camera FOV-y, Near Plane and Far Plane
         /*(this is a static camera)const float FOVy = glm::radians(90.0f);
 		const float nearPlane = 0.1f;
-		const float farPlane = 100.0f;
-
-		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
-		Prj[1][1] *= -1;
-		glm::vec3 camTarget = glm::vec3(0,0,0);
-		glm::vec3 camPos    = camTarget + glm::vec3(6,3,10) / 2.0f;
-		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0,1,0));*/
+		const float farPlane = 100.0f;*/
 
         const float ROT_SPEED = glm::radians(120.0f);
         const float MOVE_SPEED = 2.0f;
@@ -839,47 +876,10 @@ class MeshLoader : public BaseProject {
                 World = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
                 uboC[i][j].mvpMat = ViewPrj * World;
                 DSC[i][j].map(currentImage, &uboC[i][j], sizeof(uboC[i][j]), 0);
+                DSC[i][j].map(currentImage, &colorB[i][j], sizeof(colorB[i][j]), 2);
             }
         }
 
-        float positions[36][2] = {
-                {-2.5f, -2.5f},
-                {10.5f, -2.5f},
-                {10.5f, 10.5f},
-                {-2.5f, 10.5f},
-                {3.75f, -4.0f},
-                {12.0f, 3.75f},
-                {3.75f, 12.0f},
-                {-4.0f, 3.75f},
-                {-6.5f, -6.5f},
-                {14.5f, -6.5f},
-                {14.5f, 14.5f},
-                {-6.5f, 14.5f},
-                {0.625f, -6.5f},
-                {7.375f, -6.5f},
-                {14.5f, 0.625f},
-                {14.5f, 7.375f},
-                {0.625f, 14.5f},
-                {7.375f, 14.5f},
-                {-6.5f, 0.625f},
-                {-6.5f, 7.375f},
-                {-10.5f, -10.5f},
-                {18.5f, -10.5f},
-                {18.5f, 18.5f},
-                {-10.5f, 18.5f},
-                {-2.5f, -10.5f},
-                {3.75f, -10.5f},
-                {10.5f, -10.5f},
-                {18.5f, -2.5f},
-                {18.5f, 3.75f},
-                {18.5f, 10.5f},
-                {10.5f, 18.5f},
-                {3.75f, 18.5f},
-                {-2.5f, 18.5f},
-                {-10.5f, 10.5f},
-                {-10.5f, 3.75f},
-                {-10.5f, -2.5f}
-        };
 
         float xt, zt;
 
@@ -891,9 +891,7 @@ class MeshLoader : public BaseProject {
             uboT[i].mvpMat = ViewPrj * World;
             DST[i].map(currentImage, &uboT[i], sizeof(uboT[i]), 0);
         }
-        /*World = glm::scale(glm::translate(glm::mat4(1.0f), calculateCenter(MC[0][0])), glm::vec3(10.0f, 10.0f, 10.0f));
-        ubo1.mvpMat = ViewPrj * World;
-        DS1.map(currentImage, &ubo1, sizeof(ubo1), 0);*/
+
 
         const std::vector<Piece*>& pieces = board.getAllPieces();
         for (const Piece* piece : pieces)

@@ -44,6 +44,7 @@ void Game::init()
         board.placePiece(std::make_unique<Pawn>(Color::WHITE, 1, i), 1, i);
     }
 
+    currPlayer = Color::WHITE;
 }
 
 // Display the current state of the board
@@ -59,4 +60,28 @@ void Game::displayBoard() const
 Board &Game::getBoard()
 {
     return board;
+}
+
+Color Game::isPlaying() const{
+    return currPlayer;
+}
+
+void Game::swapColor() {
+    currPlayer =  (currPlayer == Color::WHITE) ? Color::BLACK : Color::WHITE;
+}
+
+std::pair<int, int> Game::getNextMoove(){
+    return nextMoove;
+}
+
+void Game::setNextMoove(std::pair<int, int> xy){
+    nextMoove = xy;
+}
+
+Piece* Game::getCurrPiece(){
+    return currPiece;
+}
+
+void Game::setCurrPiece(Piece* piece){
+    currPiece = piece;
 }
