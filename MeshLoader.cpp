@@ -122,9 +122,9 @@ class MeshLoader : public BaseProject {
         initialBackgroundColor = {0.1f, 0.9f, 1.0f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 170;
-		texturesInPool = 170;
-		setsInPool = 170;
+		uniformBlocksInPool = 269;
+		texturesInPool = 135;
+		setsInPool = 136;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
